@@ -1,5 +1,5 @@
-﻿import os
-import sqlite3
+﻿import sqlite3
+import os
 import json
 from datetime import datetime
 from typing import List, Dict, Any, Optional
@@ -12,6 +12,7 @@ def init_db(db_path: str = DB_PATH):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
+    # Mood & Emotional Logs
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS mood_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -23,6 +24,7 @@ def init_db(db_path: str = DB_PATH):
     )
     """)
 
+    # Wingman & Coaching Logs
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS coaching_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,6 +35,7 @@ def init_db(db_path: str = DB_PATH):
     )
     """)
 
+    # Decompression Sessions
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS decompression_sessions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,6 +43,30 @@ def init_db(db_path: str = DB_PATH):
         technique TEXT NOT NULL,
         duration_seconds INTEGER DEFAULT 120,
         notes TEXT
+    )
+    """)
+
+    # Message Lab Analyses
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS message_analyses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        original_message TEXT NOT NULL,
+        confidence_score INTEGER NOT NULL,
+        neediness_level TEXT NOT NULL,
+        banter_level TEXT NOT NULL,
+        rewrites_json TEXT NOT NULL
+    )
+    """)
+
+    # Roleplay Sessions
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS roleplay_sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        scenario_key TEXT NOT NULL,
+        turns_count INTEGER NOT NULL,
+        scorecard_json TEXT NOT NULL
     )
     """)
 
@@ -59,7 +86,7 @@ def log_mood(score: int, emotions: List[str], trigger: str, reflection: str, db_
     conn.close()
     return entry_id
 
-def get_recent_moods(limit: int = 10, db_path: str = DB_PATH) -> List[Dict[str, Any]]:
+def get_recent_moods(limit: int = 15, db_path: str = DB_PATH) -> List[Dict[str, Any]]:
     init_db(db_path)
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -79,6 +106,37 @@ def get_recent_moods(limit: int = 10, db_path: str = DB_PATH) -> List[Dict[str, 
         })
     return logs
 
+def get_mood_stats(db_path: str = DB_PATH) -> Dict[str, Any]:
+    """Calculates mood analytics and emotion distribution."""
+    init_db(db_path)
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT mood_score, emotion_tags FROM mood_logs")
+    rows = cursor.fetchall()
+    conn.close()
+
+    if not rows:
+        return {"avg_score": 7.0, "total_logs": 0, "emotion_counts": {}}
+
+    scores = [r[0] for r in rows]
+    avg_score = sum(scores) / len(scores)
+
+    emotion_counts: Dict[str, int] = {}
+    for r in rows:
+        if r[1]:
+            try:
+                tags = json.loads(r[1])
+                for t in tags:
+                    emotion_counts[t] = emotion_counts.get(t, 0) + 1
+            except Exception:
+                pass
+
+    return {
+        "avg_score": round(avg_score, 1),
+        "total_logs": len(rows),
+        "emotion_counts": emotion_counts
+    }
+
 def log_coaching(category: str, query: str, advice: str, db_path: str = DB_PATH) -> int:
     init_db(db_path)
     conn = sqlite3.connect(db_path)
@@ -92,14 +150,31 @@ def log_coaching(category: str, query: str, advice: str, db_path: str = DB_PATH)
     conn.close()
     return entry_id
 
-def get_recent_coachings(limit: int = 10, db_path: str = DB_PATH) -> List[Dict[str, Any]]:
+def log_message_analysis(original_msg: str, confidence: int, neediness: str, banter: str, rewrites: List[Dict[str, str]], db_path: str = DB_PATH) -> int:
     init_db(db_path)
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    cursor.execute("SELECT id, timestamp, category, user_query, advice_summary FROM coaching_logs ORDER BY timestamp DESC LIMIT ?", (limit,))
-    rows = cursor.fetchall()
+    cursor.execute(
+        "INSERT INTO message_analyses (original_message, confidence_score, neediness_level, banter_level, rewrites_json) VALUES (?, ?, ?, ?, ?)",
+        (original_msg, confidence, neediness, banter, json.dumps(rewrites))
+    )
+    entry_id = cursor.lastrowid
+    conn.commit()
     conn.close()
-    return [{"id": r[0], "timestamp": r[1], "category": r[2], "user_query": r[3], "advice_summary": r[4]} for r in rows]
+    return entry_id
+
+def log_roleplay_session(scenario_key: str, turns_count: int, scorecard: Dict[str, Any], db_path: str = DB_PATH) -> int:
+    init_db(db_path)
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO roleplay_sessions (scenario_key, turns_count, scorecard_json) VALUES (?, ?, ?)",
+        (scenario_key, turns_count, json.dumps(scorecard))
+    )
+    entry_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return entry_id
 
 def log_decompression(technique: str, duration: int = 120, notes: str = "", db_path: str = DB_PATH) -> int:
     init_db(db_path)

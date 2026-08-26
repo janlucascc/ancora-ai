@@ -9,33 +9,36 @@
 ## 🌟 Overview
 **Ancora AI** (inspired by the Latin *Ancora* — Anchor & Safe Harbor) is a 24/7 autonomous everyday AI companion built with the **Strands Agents SDK** and **Amazon Bedrock**.
 
-It is designed for real-world daily challenges:
-1. **Workplace & Career Decompression:** Instant resets after stressful meetings, overcoming imposter syndrome, and boundary management.
-2. **Dating & Social Wingman:** Practical conversation openers, flirting dynamics, text crafting, and overcoming social anxiety.
-3. **Everyday Emotional Grounding:** Science-backed 2-minute micro-routines (Box Breathing, 5-4-3-2-1 Grounding).
-4. **Safety & Crisis Guardrails:** Automatic detection and referral to emergency hotlines (CVV 188 / 988).
+It solves real-world everyday human challenges:
+1. **💼 Workplace & Career Decompression:** Instant resets after stressful meetings, overcoming imposter syndrome, and boundary management.
+2. **📱 Message Lab & Flirt Rater:** Real-time analysis of drafted texts (Confidence Score, Neediness Index, Banter Level) with 3 AI-tailored high-value rewrites.
+3. **🎭 Scenario Roleplay Arena:** Turn-based live simulator to practice tough boss negotiations, first date icebreakers, and social networking with automated AI scorecards.
+4. **🫁 Visual Somatic Grounding:** CSS-animated Box Breathing circle + Dr. Andrew Huberman's *Physiological Sigh* + built-in relaxing soundscapes (Rain, Ocean, Hearth).
+5. **📈 Emotional Evolution Dashboard:** Interactive charts tracking mood trends and emotional frequency over time.
+6. **🛡️ Safety & Crisis Guardrails:** Automatic detection and compassionate referral to emergency hotlines (CVV 188 / 988).
 
 ---
 
-## 🏛️ Architecture
+## 🏛️ System Architecture
 
 ```mermaid
 flowchart TD
-    User([User / Web / Mobile]) --> UI[Streamlit UI / REST API]
-    Guardrail{Crisis Guardrail Check}
-    UI --> Guardrail
+    User([User / Web / Mobile]) --> UI[Streamlit Glassmorphic UI]
+    UI --> Guardrail{Crisis Guardrail Check}
     Guardrail -- High Risk --> Emergency[🚨 Emergency Hotline Protocol: CVV 188 / 988]
     Guardrail -- Normal --> StrandsAgent[⚓ Strands Agent Core]
     
     StrandsAgent --> Bedrock[AWS Amazon Bedrock - Claude 3.5 Sonnet / AWS Nova]
     StrandsAgent --> Tools[Custom Strands Tools]
     
-    Tools --> T1[🔥 Social Wingman Tool]
-    Tools --> T2[🧘 2-Min Decompression Tool]
-    Tools --> T3[⚓ Confidence Reframing Tool]
-    Tools --> T4[📊 Mood & Evolution Journal Tool]
+    Tools --> T1[📱 Message Lab & Flirt Rater]
+    Tools --> T2[🎭 Roleplay Simulation Arena]
+    Tools --> T3[🔥 Social Wingman Tool]
+    Tools --> T4[🫁 Somatic Decompression Hub]
+    Tools --> T5[⚓ Confidence Reframing Tool]
+    Tools --> T6[📊 Mood & Evolution Journal Tool]
     
-    T4 --> SQLite[(SQLite Local Persistence)]
+    T1 & T2 & T6 --> SQLite[(SQLite Local Persistence)]
 ```
 
 ---
@@ -44,7 +47,7 @@ flowchart TD
 - **Agent Framework:** `strands-agents` (Strands Agents SDK)
 - **Cloud & AI Foundation:** AWS Amazon Bedrock (Anthropic Claude 3.5 Sonnet / AWS Nova)
 - **Language:** Python 3.10+
-- **Frontend / UI:** Streamlit
+- **Frontend / UI:** Streamlit with Custom Glassmorphism, CSS Keyframe Animations & Audio Embeds
 - **Persistence:** SQLite
 - **Observability:** OpenTelemetry ready
 
@@ -82,7 +85,7 @@ streamlit run src/ui/app.py
 
 ### 5. Run Automated Tests
 ```bash
-pytest tests/test_agent.py
+python tests/test_agent.py
 ```
 
 ---

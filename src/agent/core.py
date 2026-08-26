@@ -11,6 +11,8 @@ except ImportError:
 from src.agent.prompts import ANCORA_SYSTEM_PROMPT
 from src.agent.guardrails import check_crisis_risk
 from src.tools.social_wingman import generate_wingman_advice
+from src.tools.message_analyzer import analyze_message_and_rewrite
+from src.tools.roleplay_arena import get_scenario_details, generate_roleplay_turn
 from src.tools.stress_decompress import get_decompression_routine
 from src.tools.confidence_anchor import reframe_negative_thought
 from src.tools.mood_journal import record_mood_entry, get_mood_history
@@ -54,10 +56,20 @@ class AncoraAgent:
         msg_lower = user_message.lower()
 
         # 2. Contextual Routing to Specialized Tools
+        if any(w in msg_lower for w in ["suspiro", "huberman"]):
+            routine = get_decompression_routine("physiological_sigh")
+            steps_formatted = "\n".join(routine["steps"])
+            return f"Vamos usar a técnica de alívio mais rápida da neurociência:\n\n### {routine['name']}\n**Tempo sugerido:** {routine['duration']}\n\n{steps_formatted}\n\nFaça esse ciclo 3 vezes e sinta seus batimentos normalizarem."
+
         if any(w in msg_lower for w in ["respira", "ansiedade", "pânico", "panico", "estresse", "desacelerar", "calma", "grounding"]):
             routine = get_decompression_routine("box_breathing" if "respira" in msg_lower else "grounding_54321")
             steps_formatted = "\n".join(routine["steps"])
             return f"Respira fundo, estou aqui contigo. Vamos fazer um reset rápido agora:\n\n### {routine['name']}\n**Tempo sugerido:** {routine['duration']}\n\n{steps_formatted}\n\nQuando terminar essas repetições, me conta como seu corpo está se sentindo."
+
+        if any(w in msg_lower for w in ["analisar mensagem", "avaliar mensagem", "analisa essa mensagem", "o que acha dessa mensagem"]):
+            analysis = analyze_message_and_rewrite(user_message, "romantic")
+            rewrites_str = "\n".join(f"- **{r['style']}:** *\"{r['text']}\"*\n  *Por que funciona:* {r['rationale']}" for r in analysis["rewrites"])
+            return f"⚓ **Análise do Message Lab | Ancora AI**\n\n- **Pontuação de Confiança:** {analysis['confidence_score']}/100\n- **Nível de Carência/Pressão:** {analysis['neediness_level']}\n- **Nível de Banter/Humor:** {analysis['banter_level']}\n\n### 💡 Sugestões de Reescrita de Alto Valor:\n{rewrites_str}"
 
         if any(w in msg_lower for w in ["garota", "mulher", "flerte", "flertar", "conversa", "tinder", "whatsapp", "conquistar", "chegar nela", "mandar mensagem", "ficante"]):
             scenario_key = "dating_text" if any(k in msg_lower for k in ["mensagem", "whatsapp", "direct", "insta", "instagram", "texto"]) else "approach_icebreaker"
@@ -96,6 +108,6 @@ class AncoraAgent:
         return (
             "Te ouço com total atenção. Momentos assim exigem que a gente pare, respire e olhe a situação com clareza.\n\n"
             "Em relação ao que você compartilhou: o primeiro passo é não se cobrar tanto. "
-            "Podemos traçar um plano de ação prático ou fazer um exercício de foco se preferir. "
+            "Podemos traçar um plano de ação prático, usar o Message Lab para afinar uma resposta ou fazer um exercício de foco se preferir.\n\n"
             "Como posso te ajudar a clarear a mente agora?"
         )
