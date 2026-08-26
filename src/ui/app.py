@@ -30,7 +30,6 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
-    /* Global Colors & Reset */
     :root {
         --bg-main: #131417;
         --bg-sidebar: #18191d;
@@ -49,14 +48,12 @@ st.markdown("""
         color: var(--text-main) !important;
     }
 
-    /* Remove default Streamlit padding */
     .block-container {
-        padding-top: 2rem !important;
+        padding-top: 1.5rem !important;
         padding-bottom: 5rem !important;
-        max-width: 950px !important;
+        max-width: 920px !important;
     }
 
-    /* Sidebar Styling (Antigravity Look) */
     [data-testid="stSidebar"] {
         background-color: var(--bg-sidebar) !important;
         border-right: 1px solid var(--border-color) !important;
@@ -65,20 +62,18 @@ st.markdown("""
         border-color: var(--border-color) !important;
     }
 
-    /* Antigravity Header Bar */
     .antigravity-topbar {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 8px 16px;
-        background-color: transparent;
+        padding: 6px 0px 14px 0px;
         border-bottom: 1px solid var(--border-color);
-        margin-bottom: 24px;
+        margin-bottom: 20px;
     }
     .topbar-title {
         font-size: 0.95rem;
-        font-weight: 500;
-        color: var(--text-muted);
+        font-weight: 600;
+        color: #f1f5f9;
     }
     .topbar-badge {
         font-size: 0.75rem;
@@ -90,45 +85,40 @@ st.markdown("""
         font-weight: 500;
     }
 
-    /* Chat Bubbles */
     .stChatMessage {
         background-color: transparent !important;
         border: none !important;
         padding: 8px 0px !important;
     }
 
-    /* User Message Bubble */
     .user-bubble {
         background-color: var(--bg-user-bubble);
         border: 1px solid rgba(255,255,255,0.06);
         border-radius: 12px;
-        padding: 14px 18px;
+        padding: 12px 16px;
         color: #f1f5f9;
         font-size: 0.95rem;
         line-height: 1.5;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
     }
 
-    /* Assistant Message */
     .assistant-body {
         color: #e2e8f0;
         font-size: 0.95rem;
         line-height: 1.6;
     }
 
-    /* Thought / Reasoning Collapsible Block (Antigravity Style) */
     .thought-container {
         background-color: rgba(30, 31, 37, 0.6);
         border-left: 2px solid #64748b;
         border-radius: 4px;
         padding: 8px 14px;
-        margin-bottom: 14px;
+        margin-bottom: 12px;
         font-size: 0.85rem;
         color: #94a3b8;
         font-family: 'JetBrains Mono', monospace;
     }
 
-    /* New Chat Button */
     .stButton>button {
         background-color: var(--bg-card) !important;
         color: var(--text-main) !important;
@@ -142,7 +132,6 @@ st.markdown("""
         background-color: #282a33 !important;
     }
 
-    /* Bottom Input Container */
     .stChatInput {
         border-color: var(--border-color) !important;
         background-color: var(--bg-sidebar) !important;
@@ -153,7 +142,6 @@ st.markdown("""
         box-shadow: 0 0 0 1px var(--accent-blue) !important;
     }
 
-    /* Cards & Panels */
     .ide-card {
         background-color: var(--bg-card);
         border: 1px solid var(--border-color);
@@ -162,7 +150,6 @@ st.markdown("""
         margin-bottom: 12px;
     }
 
-    /* Subtle Scrollbar */
     ::-webkit-scrollbar {
         width: 6px;
         height: 6px;
@@ -183,12 +170,12 @@ st.markdown("""
 if "conversations" not in st.session_state:
     st.session_state.conversations = {
         "conv_1": {
-            "title": "⚓ Clareza & Alinhamento TCC",
+            "title": "Clareza & Alinhamento TCC",
             "messages": [
                 {
                     "role": "assistant",
                     "thought": "Sistema inicializado. Protocolo de psicologia comportamental e social ativo.",
-                    "content": "Olá. Eu sou o **Ancora AI** ⚓ — trabalho com psicologia comportamental (TCC/ACT) e inteligência social para trazer clareza prática e honesta nos momentos de estresse, trabalho ou relacionamentos.\n\nO que você gostaria de colocar na mesa hoje?"
+                    "content": "Olá. Eu sou o **Ancora AI** — trabalho com psicologia comportamental (TCC/ACT) e inteligência social para trazer clareza prática e honesta nos momentos de estresse, trabalho ou relacionamentos.\n\nO que você gostaria de colocar na mesa hoje?"
                 }
             ]
         }
@@ -203,19 +190,25 @@ if "agent" not in st.session_state:
 if "active_mode" not in st.session_state:
     st.session_state.active_mode = "Chat Livre"
 
+# Clean up any existing title in session state that had duplicate emojis
+for c in st.session_state.conversations.values():
+    c["title"] = c["title"].replace("⚓", "").replace("💬", "").strip()
+    if not c["title"]:
+        c["title"] = "Conversa"
+
 current_conv = st.session_state.conversations[st.session_state.current_conv_id]
 
 # ══════════════════════════════════════════════════════════════
-# SIDEBAR (Antigravity Navigation Style)
+# SIDEBAR (Clean Minimalist Antigravity Navigation)
 # ══════════════════════════════════════════════════════════════
 with st.sidebar:
-    st.markdown("### ⚓ **Antigravity** <span style='font-size:0.75rem; color:#64748b;'>v2.0</span>", unsafe_allow_html=True)
+    st.markdown("### ⚓ **Ancora AI** <span style='font-size:0.75rem; color:#64748b;'>v2.0</span>", unsafe_allow_html=True)
     
     # New Conversation Button
-    if st.button("＋ New Conversation", use_container_width=True):
+    if st.button("＋ Nova Conversa", use_container_width=True):
         new_id = f"conv_{len(st.session_state.conversations) + 1}"
         st.session_state.conversations[new_id] = {
-            "title": f"Nova Conversa {len(st.session_state.conversations) + 1}",
+            "title": f"Conversa {len(st.session_state.conversations) + 1}",
             "messages": [
                 {
                     "role": "assistant",
@@ -225,11 +218,12 @@ with st.sidebar:
             ]
         }
         st.session_state.current_conv_id = new_id
+        st.session_state.active_mode = "Chat Livre"
         st.rerun()
 
     st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
 
-    # Mode Selector
+    # Clean Mode Selector
     st.caption("FERRAMENTAS & MODOS")
     selected_mode = st.radio(
         "Modo:",
@@ -240,11 +234,12 @@ with st.sidebar:
 
     st.divider()
 
-    # Conversation History List (Like Antigravity sidebar)
+    # Conversation History List
     st.caption("CONVERSAS RECENTES")
     for cid, cdata in list(st.session_state.conversations.items()):
         is_active = (cid == st.session_state.current_conv_id)
-        label = f"💬 {cdata['title'][:22]}..." if is_active else f"{cdata['title'][:22]}..."
+        display_title = cdata['title'][:22]
+        label = f"• {display_title}..." if is_active else f"  {display_title}..."
         if st.button(label, key=f"btn_{cid}", use_container_width=True):
             st.session_state.current_conv_id = cid
             st.session_state.active_mode = "Chat Livre"
@@ -252,7 +247,7 @@ with st.sidebar:
 
     st.divider()
 
-    # Settings / Provider Info at the Bottom
+    # Settings Drawer
     with st.expander("⚙️ Configurações & API Keys"):
         custom_key = st.text_input("Google Gemini API Key (Opcional):", type="password", placeholder="AIzaSy...")
         if st.button("Salvar Chave", use_container_width=True):
@@ -266,11 +261,11 @@ with st.sidebar:
 # MAIN CANVAS (Antigravity UI Layout)
 # ══════════════════════════════════════════════════════════════
 
-# Top Bar
+# Top Bar (Single clean icon)
 st.markdown(f"""
 <div class="antigravity-topbar">
     <div class="topbar-title">
-        ⚓ <strong>{current_conv['title']}</strong> &nbsp;·&nbsp; <span style="font-size:0.8rem; color:#64748b;">Modo: {st.session_state.active_mode}</span>
+        ⚓ {current_conv['title']} &nbsp;·&nbsp; <span style="font-weight:400; font-size:0.8rem; color:#64748b;">Modo: {st.session_state.active_mode}</span>
     </div>
     <div class="topbar-badge">
         Claude 3.5 Sonnet / ACT & TCC Engine
@@ -278,9 +273,8 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# ─── VIEW 1: CHAT LIVRE (Default Antigravity View) ───────────
+# ─── VIEW 1: CHAT LIVRE ──────────────────────────────────────
 if st.session_state.active_mode == "Chat Livre":
-    # Render Conversation Messages
     for msg in current_conv["messages"]:
         if msg["role"] == "user":
             st.markdown(f"""
@@ -289,33 +283,28 @@ if st.session_state.active_mode == "Chat Livre":
             </div>
             """, unsafe_allow_html=True)
         else:
-            # Render Thought / Reasoning Box if available (Antigravity Style)
             if msg.get("thought"):
-                with st.expander(f"💡 Thought process (TCC / ACT Method)"):
+                with st.expander("💡 Thought process (TCC / ACT Method)"):
                     st.markdown(f"""
                     <div class="thought-container">
                         {msg['thought']}
                     </div>
                     """, unsafe_allow_html=True)
 
-            # Assistant Content
             st.markdown(f"""
             <div class="assistant-body">
                 {msg['content']}
             </div>
             """, unsafe_allow_html=True)
-            st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
 
-    # Bottom Chat Input (Antigravity floating style)
     if user_prompt := st.chat_input("Digite sua dúvida, desabafo ou situação..."):
-        # Append User Msg
         current_conv["messages"].append({"role": "user", "content": user_prompt})
         
-        # Auto-update conversation title on first user turn
         if len(current_conv["messages"]) == 2:
-            current_conv["title"] = user_prompt[:25]
+            clean_title = user_prompt.replace("⚓", "").replace("💬", "").strip()
+            current_conv["title"] = clean_title[:25]
 
-        # Generate Response via Agent
         with st.spinner("Analisando com metodologia comportamental..."):
             response_dict = st.session_state.agent.respond(user_prompt)
             current_conv["messages"].append({
@@ -326,7 +315,7 @@ if st.session_state.active_mode == "Chat Livre":
 
         st.rerun()
 
-# ─── VIEW 2: MESSAGE LAB & WINGMAN ───────────────────────────
+# ─── VIEW 2: MESSAGE LAB ─────────────────────────────────────
 elif st.session_state.active_mode == "Message Lab (Flerte/Trabalho)":
     st.markdown("### 📱 **Message Lab & Flirt Rater**")
     st.caption("Diagnóstico comportamental de mensagens antes do envio. Avalia nível de pressão, segurança e autenticidade.")
@@ -335,7 +324,7 @@ elif st.session_state.active_mode == "Message Lab (Flerte/Trabalho)":
     with col1:
         msg_in = st.text_area("Cole a mensagem para análise:", height=140, placeholder="Ex: Oi, vi que você sumiu... queria saber se fiz algo errado...")
         aud = st.radio("Contexto:", ["Romântico / Flerte", "Profissional / Limites"], horizontal=True)
-        if st.button("🔥 Diagnosticar Mensagem", type="primary", use_container_width=True):
+        if st.button("Diagnosticar Mensagem", type="primary", use_container_width=True):
             if msg_in:
                 res = analyze_message_and_rewrite(msg_in, "romantic" if "Romântico" in aud else "professional")
                 st.session_state["msg_lab_result"] = res
@@ -345,14 +334,14 @@ elif st.session_state.active_mode == "Message Lab (Flerte/Trabalho)":
             res = st.session_state["msg_lab_result"]
             st.markdown(f"""
             <div class="ide-card">
-                <h4>📊 Diagnóstico da Mensagem</h4>
+                <h4>Diagnóstico da Mensagem</h4>
                 <p><strong>Confiança:</strong> <code>{res['confidence_score']}/100</code></p>
                 <p><strong>Nível de Pressão/Carência:</strong> {res['neediness_level']}</p>
                 <p><strong>Engajamento/Banter:</strong> {res['banter_level']}</p>
             </div>
             """, unsafe_allow_html=True)
 
-            st.markdown("#### 💡 3 Alternativas Estruturadas:")
+            st.markdown("#### 3 Alternativas Estruturadas:")
             for rw in res["rewrites"]:
                 st.markdown(f"""
                 <div class="ide-card" style="border-left: 3px solid #3b82f6;">
@@ -375,7 +364,7 @@ elif st.session_state.active_mode == "Arena de Simulação (Roleplay)":
         st.session_state.rp_chat = [{"role": "partner", "content": meta["initial_message"]}]
         st.session_state.rp_scenario = chosen_k
 
-    if st.button("🔄 Reiniciar Simulação"):
+    if st.button("Reiniciar Simulação"):
         st.session_state.rp_chat = [{"role": "partner", "content": meta["initial_message"]}]
         st.rerun()
 
@@ -408,10 +397,10 @@ elif st.session_state.active_mode == "Descompressão Somática":
     col1, col2 = st.columns([1, 1])
     with col1:
         tech = st.selectbox("Escolha o protocolo:", [
-            ("physiological_sigh", "⚡ Suspiro Fisiológico (Huberman — Alívio em 1 min)"),
-            ("box_breathing", "🫁 Box Breathing (Respiração Quadrada — Navy SEALs)"),
-            ("grounding_54321", "⚓ Ancoragem Tátil 5-4-3-2-1"),
-            ("perspective_reset", "🧠 Reset de Perspectiva")
+            ("physiological_sigh", "Suspiro Fisiológico (Huberman — Alívio em 1 min)"),
+            ("box_breathing", "Box Breathing (Respiração Quadrada — Navy SEALs)"),
+            ("grounding_54321", "Ancoragem Tátil 5-4-3-2-1"),
+            ("perspective_reset", "Reset de Perspectiva")
         ], format_func=lambda x: x[1])
         r_data = get_decompression_routine(tech[0])
 
@@ -426,7 +415,7 @@ elif st.session_state.active_mode == "Descompressão Somática":
         """, unsafe_allow_html=True)
 
     with col2:
-        st.markdown("#### 🎧 Sons Ambientes")
+        st.markdown("#### Sons Ambientes")
         s_opt = st.selectbox("Som de fundo:", ["Chuva Suave", "Ondas do Oceano", "Lareira"])
         urls = {
             "Chuva Suave": "https://assets.mixkit.co/active_storage/sfx/1253/1253-preview.mp3",
@@ -448,7 +437,7 @@ elif st.session_state.active_mode == "Dashboard & Métricas":
     c4.metric("Economia Est. ($)", f"${token_m['estimated_cost_saved_usd']:.4f}")
 
     st.markdown("---")
-    st.markdown("#### 📝 Registrar Humor Rápido")
+    st.markdown("#### Registrar Humor Rápido")
     score_in = st.slider("Nota de Humor (1-10):", 1, 10, 7)
     tag_in = st.multiselect("Sentimentos:", ["Focado", "Confiante", "Tranquilo", "Ansioso", "Sobrecarregado", "Cansado"])
     trig_in = st.text_input("Gatilho ou contexto:")
