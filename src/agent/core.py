@@ -159,10 +159,22 @@ class AncoraAgent:
             "source": "procedural_engine"
         }
 
+    def generate_chat_title(self, user_message: str) -> str:
+        """Procedural 3-4 word title generation for new chats."""
+        clean = user_message.strip().lower()
+        if not clean:
+            return "Nova Conversa"
+        words = [w for w in clean.replace("?", "").replace("!", "").replace(",", "").split() if len(w) > 3]
+        if not words:
+            return clean[:20].capitalize()
+        # Simple extraction of first 3 meaningful words
+        title = " ".join(words[:3]).capitalize()
+        return f"{title}..."
+
     def _invoke_gemini_live(self, user_text: str, model_name: str = "gemini-3.6-flash") -> Optional[Dict[str, Any]]:
         """Invokes Gemini Live API with model fallback and conversation context."""
         target_model = model_name if "gemini" in model_name else "gemini-3.6-flash"
-        models_to_try = [target_model, "gemini-3.6-flash", "gemini-3.7-flash", "gemini-flash-latest"]
+        models_to_try = [target_model, "gemini-3.1-pro", "gemini-3.6-flash", "gemini-3.7-flash", "gemini-flash-latest"]
         
         contents = []
         for h in self.history[-6:]:
