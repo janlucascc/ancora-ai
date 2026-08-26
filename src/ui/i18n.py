@@ -14,20 +14,7 @@ SUPPORTED_LANGUAGES = {
 }
 
 def get_system_language() -> str:
-    """Detects system language, defaults to pt if Portuguese, else en or matching ISO."""
-    try:
-        loc = os.getenv("LANG", "") or os.getenv("LC_ALL", "")
-        if not loc:
-            try:
-                loc = locale.getlocale()[0] or ""
-            except Exception:
-                loc = ""
-        loc_str = str(loc).lower()
-        for code in ["pt", "en", "es", "fr", "zh", "hi", "ar", "bn"]:
-            if loc_str.startswith(code):
-                return code
-    except Exception:
-        pass
+    """Defaults strictly to Portuguese (pt) for Ancora AI primary experience."""
     return "pt"
 
 TRANSLATIONS: Dict[str, Dict[str, str]] = {
@@ -290,6 +277,6 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
 }
 
 def get_text(key: str, lang: str = "pt") -> str:
-    """Retrieves localized text with fallback."""
+    """Retrieves localized text, always falling back to Portuguese."""
     lang_dict = TRANSLATIONS.get(lang, TRANSLATIONS["pt"])
     return lang_dict.get(key, TRANSLATIONS["pt"].get(key, key))

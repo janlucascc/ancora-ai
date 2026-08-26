@@ -28,17 +28,17 @@ from src.database.db import (
 from src.ui.i18n import get_system_language, get_text, SUPPORTED_LANGUAGES
 
 # ══════════════════════════════════════════════════════════════
-# PERSISTENT SETTINGS INITIALIZATION
+# PERSISTENT SETTINGS (Default strictly to PT and Dark)
 # ══════════════════════════════════════════════════════════════
 if "lang" not in st.session_state:
-    stored_lang = get_preference("language", "")
-    st.session_state.lang = stored_lang if stored_lang in SUPPORTED_LANGUAGES else get_system_language()
+    stored_lang = get_preference("language", "pt")
+    st.session_state.lang = stored_lang if stored_lang in SUPPORTED_LANGUAGES else "pt"
 
 if "theme" not in st.session_state:
     st.session_state.theme = get_preference("theme", "dark")
 
 if "selected_model" not in st.session_state:
-    st.session_state.selected_model = get_preference("selected_model", "gemini-3.1-pro")
+    st.session_state.selected_model = get_preference("selected_model", "gemini-3.7-flash")
 
 lang = st.session_state.lang
 theme = st.session_state.theme
@@ -51,66 +51,205 @@ st.set_page_config(
 )
 
 # ══════════════════════════════════════════════════════════════
-# THEME ENGINE (DARK & FLAWLESS LIGHT CSS)
+# PRECISION THEME ENGINE (Dark & Clean Light Mode)
 # ══════════════════════════════════════════════════════════════
 if theme == "light":
-    css_theme_vars = """
+    css_vars = """
         --bg-main: #f8fafc;
         --bg-sidebar: #f1f5f9;
         --bg-card: #ffffff;
-        --bg-user-bubble: #e2e8f0;
-        --border-color: #cbd5e1;
-        --text-main: #0f172a;
+        --bg-user: #e2e8f0;
+        --text-primary: #0f172a;
+        --text-secondary: #475569;
         --text-muted: #64748b;
+        --border-ui: #cbd5e1;
         --accent-blue: #2563eb;
         --accent-cyan: #0284c7;
-        --thought-bg: rgba(241, 245, 249, 0.9);
-        --thought-text: #475569;
-        --shimmer-bg: linear-gradient(90deg, rgba(226, 232, 240, 0.6) 0%, rgba(186, 230, 253, 0.6) 50%, rgba(226, 232, 240, 0.6) 100%);
+        --thought-bg: #f1f5f9;
+        --thought-text: #334155;
+        --shimmer-bg: linear-gradient(90deg, #e2e8f0 0%, #bae6fd 50%, #e2e8f0 100%);
+        --input-bg: #ffffff;
     """
 else:
-    css_theme_vars = """
+    css_vars = """
         --bg-main: #0f1013;
         --bg-sidebar: #14151a;
         --bg-card: #191a22;
-        --bg-user-bubble: #22242e;
-        --border-color: #272833;
-        --text-main: #f1f5f9;
+        --bg-user: #22242e;
+        --text-primary: #f8fafc;
+        --text-secondary: #cbd5e1;
         --text-muted: #94a3b8;
+        --border-ui: #272833;
         --accent-blue: #3b82f6;
         --accent-cyan: #38bdf8;
         --thought-bg: rgba(25, 26, 34, 0.7);
         --thought-text: #94a3b8;
         --shimmer-bg: linear-gradient(90deg, rgba(30, 41, 59, 0.4) 0%, rgba(56, 189, 248, 0.1) 50%, rgba(30, 41, 59, 0.4) 100%);
+        --input-bg: #14151a;
     """
 
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-    :root {{ {css_theme_vars} }}
-    html, body, [class*="css"], .stApp {{ background-color: var(--bg-main) !important; font-family: 'Plus Jakarta Sans', sans-serif !important; color: var(--text-main) !important; }}
-    .block-container {{ padding-top: 1.5rem !important; padding-bottom: 5rem !important; max-width: 940px !important; }}
-    [data-testid="stSidebar"] {{ background-color: var(--bg-sidebar) !important; border-right: 1px solid var(--border-color) !important; }}
-    @keyframes fadeInSlide {{ from {{ opacity: 0; transform: translateY(6px); }} to {{ opacity: 1; transform: translateY(0); }} }}
-    .user-bubble, .assistant-body, .thought-container, .ide-card {{ animation: fadeInSlide 0.25s ease-out; }}
-    .status-dot {{ display: inline-block; width: 7px; height: 7px; background-color: #22c55e; border-radius: 50%; margin-right: 6px; box-shadow: 0 0 8px #22c55e; animation: pulseDot 2s infinite; }}
-    @keyframes pulseDot {{ 0%, 100% {{ opacity: 1; transform: scale(1); }} 50% {{ opacity: 0.4; transform: scale(0.85); }} }}
-    .live-thinking-box {{ display: flex; align-items: center; gap: 12px; background: var(--shimmer-bg); background-size: 200% 100%; animation: shimmerWave 2s infinite linear; border-left: 3px solid var(--accent-cyan); border-radius: 6px; padding: 10px 16px; margin: 12px 0; font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; color: var(--accent-cyan); }}
-    @keyframes shimmerWave {{ 0% {{ background-position: 200% 0; }} 100% {{ background-position: -200% 0; }} }}
-    .thinking-spinner {{ display: inline-block; width: 12px; height: 12px; border: 2px solid rgba(56, 189, 248, 0.3); border-radius: 50%; border-top-color: var(--accent-cyan); animation: spin 0.8s linear infinite; }}
-    @keyframes spin {{ to {{ transform: rotate(360deg); }} }}
-    .ancora-topbar {{ display: flex; align-items: center; justify-content: space-between; padding: 6px 0px 14px 0px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; }}
-    .topbar-title {{ font-size: 0.95rem; font-weight: 600; color: var(--text-main); }}
-    .topbar-badge {{ font-size: 0.75rem; background: rgba(59, 130, 246, 0.12); color: var(--accent-blue); border: 1px solid var(--border-color); padding: 4px 12px; border-radius: 12px; font-weight: 500; }}
-    .user-bubble {{ background-color: var(--bg-user-bubble); border: 1px solid var(--border-color); border-radius: 12px; padding: 13px 18px; color: var(--text-main); font-size: 0.95rem; line-height: 1.5; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }}
-    .assistant-body {{ color: var(--text-main); font-size: 0.95rem; line-height: 1.65; }}
-    .thought-container {{ background-color: var(--thought-bg); border-left: 2px solid var(--accent-cyan); border-radius: 4px; padding: 10px 14px; margin-bottom: 12px; font-size: 0.85rem; color: var(--thought-text); font-family: 'JetBrains Mono', monospace; }}
-    .stButton>button {{ background: var(--bg-card) !important; color: var(--text-main) !important; border: 1px solid var(--border-color) !important; border-radius: 8px !important; font-weight: 500 !important; transition: all 0.2s ease !important; }}
-    .stButton>button:hover {{ border-color: var(--accent-blue) !important; box-shadow: 0 0 10px rgba(59, 130, 246, 0.2) !important; transform: translateY(-1px) !important; }}
-    .stChatInput {{ border-color: var(--border-color) !important; background-color: var(--bg-sidebar) !important; border-radius: 14px !important; }}
-    .stChatInput:focus-within {{ border-color: var(--accent-blue) !important; box-shadow: 0 0 12px rgba(59, 130, 246, 0.2) !important; }}
-    .ide-card {{ background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; margin-bottom: 12px; transition: all 0.2s ease; }}
-    .ide-card:hover {{ border-color: var(--accent-cyan); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08); transform: translateY(-1px); }}
+
+    :root {{
+        {css_vars}
+    }}
+
+    .stApp {{
+        background-color: var(--bg-main) !important;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+        color: var(--text-primary) !important;
+    }}
+
+    .block-container {{
+        padding-top: 1.5rem !important;
+        padding-bottom: 5rem !important;
+        max-width: 940px !important;
+    }}
+
+    section[data-testid="stSidebar"] {{
+        background-color: var(--bg-sidebar) !important;
+        border-right: 1px solid var(--border-ui) !important;
+    }}
+    section[data-testid="stSidebar"] * {{
+        color: var(--text-primary);
+    }}
+
+    .user-bubble {{
+        background-color: var(--bg-user);
+        border: 1px solid var(--border-ui);
+        border-radius: 12px;
+        padding: 13px 18px;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        line-height: 1.5;
+        margin-bottom: 14px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }}
+
+    .assistant-body {{
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        line-height: 1.65;
+    }}
+
+    .thought-container {{
+        background-color: var(--thought-bg);
+        border-left: 3px solid var(--accent-cyan);
+        border-radius: 4px;
+        padding: 10px 14px;
+        margin-bottom: 12px;
+        font-size: 0.85rem;
+        color: var(--thought-text);
+        font-family: 'JetBrains Mono', monospace;
+    }}
+
+    .ide-card {{
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-ui);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 12px;
+        color: var(--text-primary);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+        transition: all 0.2s ease;
+    }}
+    .ide-card:hover {{
+        border-color: var(--accent-cyan);
+        transform: translateY(-1px);
+    }}
+
+    .live-thinking-box {{
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: var(--shimmer-bg);
+        background-size: 200% 100%;
+        animation: shimmerWave 2s infinite linear;
+        border-left: 3px solid var(--accent-cyan);
+        border-radius: 6px;
+        padding: 10px 16px;
+        margin: 12px 0;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.88rem;
+        color: var(--accent-cyan);
+    }}
+    @keyframes shimmerWave {{
+        0% {{ background-position: 200% 0; }}
+        100% {{ background-position: -200% 0; }}
+    }}
+
+    .thinking-spinner {{
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border: 2px solid rgba(56, 189, 248, 0.3);
+        border-radius: 50%;
+        border-top-color: var(--accent-cyan);
+        animation: spin 0.8s linear infinite;
+    }}
+    @keyframes spin {{
+        to {{ transform: rotate(360deg); }}
+    }}
+
+    .status-dot {{
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        background-color: #22c55e;
+        border-radius: 50%;
+        margin-right: 6px;
+        box-shadow: 0 0 8px #22c55e;
+        animation: pulseDot 2s infinite;
+    }}
+    @keyframes pulseDot {{
+        0%, 100% {{ opacity: 1; transform: scale(1); }}
+        50% {{ opacity: 0.4; transform: scale(0.85); }}
+    }}
+
+    .ancora-topbar {{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 0px 14px 0px;
+        border-bottom: 1px solid var(--border-ui);
+        margin-bottom: 20px;
+    }}
+    .topbar-title {{
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }}
+    .topbar-badge {{
+        font-size: 0.75rem;
+        background: rgba(59, 130, 246, 0.12);
+        color: var(--accent-blue);
+        border: 1px solid var(--border-ui);
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-weight: 500;
+    }}
+
+    .stButton>button {{
+        background-color: var(--bg-card) !important;
+        color: var(--text-primary) !important;
+        border: 1px solid var(--border-ui) !important;
+        border-radius: 8px !important;
+        font-weight: 500 !important;
+    }}
+    .stButton>button:hover {{
+        border-color: var(--accent-blue) !important;
+    }}
+
+    .stChatInput {{
+        border-color: var(--border-ui) !important;
+        background-color: var(--input-bg) !important;
+        border-radius: 14px !important;
+    }}
+    .stChatInput textarea {{
+        color: var(--text-primary) !important;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -133,7 +272,6 @@ if "conversations" not in st.session_state:
                 ]
             }
         }
-        # Save initial to DB
         save_chat_session(init_id, loaded_chats[init_id]["title"])
         save_chat_message(init_id, "assistant", loaded_chats[init_id]["messages"][0]["content"], loaded_chats[init_id]["messages"][0]["thought"])
     
@@ -165,8 +303,6 @@ with st.sidebar:
         }
         st.session_state.current_conv_id = new_id
         st.session_state.active_mode = get_text("mode_chat", lang)
-        
-        # Persist new chat
         save_chat_session(new_id, st.session_state.conversations[new_id]["title"])
         save_chat_message(new_id, "assistant", welcome_msg, "Nova sessão criada.")
         st.rerun()
@@ -187,7 +323,6 @@ with st.sidebar:
     st.divider()
 
     st.caption(get_text("recent_convs", lang))
-    # Reverse so newest are at the top
     for cid, cdata in reversed(list(st.session_state.conversations.items())):
         is_active = (cid == st.session_state.current_conv_id)
         display_title = cdata['title'][:22]
@@ -200,6 +335,7 @@ with st.sidebar:
     st.divider()
 
     with st.expander(get_text("settings_heading", lang)):
+        # 1. Theme Switcher
         theme_choices = {"dark": get_text("theme_dark", lang), "light": get_text("theme_light", lang)}
         chosen_theme = st.selectbox(get_text("theme_label", lang), ["dark", "light"], format_func=lambda t: theme_choices[t], index=0 if st.session_state.theme == "dark" else 1)
         if chosen_theme != st.session_state.theme:
@@ -207,6 +343,7 @@ with st.sidebar:
             save_preference("theme", chosen_theme)
             st.rerun()
 
+        # 2. Language Switcher (Defaults to PT)
         lang_keys = list(SUPPORTED_LANGUAGES.keys())
         chosen_lang = st.selectbox(get_text("lang_label", lang), lang_keys, format_func=lambda code: f"{SUPPORTED_LANGUAGES[code]['flag']} {SUPPORTED_LANGUAGES[code]['label']}", index=lang_keys.index(st.session_state.lang) if st.session_state.lang in lang_keys else 0)
         if chosen_lang != st.session_state.lang:
@@ -215,11 +352,10 @@ with st.sidebar:
             st.session_state.agent = AncoraAgent(model_id=st.session_state.selected_model, lang=chosen_lang)
             st.rerun()
 
-        # Added gemini-3.1-pro to choices
+        # 3. Model Switcher (Defaults to Gemini 3.7 Flash)
         model_choices = {
-            "gemini-3.1-pro": "🧠 Gemini 3.1 Pro (High)",
-            "gemini-3.6-flash": "⚡ Gemini 3.6 Flash (Fast)",
-            "gemini-3.7-flash": "🧠 Gemini 3.7 Flash (Deep)",
+            "gemini-3.7-flash": "⚡ Gemini 3.7 Flash (Padrão Rápido)",
+            "gemini-3.1-pro": "🧠 Gemini 3.1 Pro (Raciocínio)",
             "claude-3-5-sonnet": "🏛️ Claude 3.5 Sonnet (AWS)",
             "offline": "🛡️ Modo Offline (TCC/ACT Local)"
         }
@@ -247,9 +383,8 @@ with st.sidebar:
 # MAIN CANVAS
 # ══════════════════════════════════════════════════════════════
 model_display_names = {
+    "gemini-3.7-flash": "Gemini 3.7 Flash / Live",
     "gemini-3.1-pro": "Gemini 3.1 Pro / Core",
-    "gemini-3.6-flash": "Gemini 3.6 Flash / Live",
-    "gemini-3.7-flash": "Gemini 3.7 Flash / Deep",
     "claude-3-5-sonnet": "Claude 3.5 Sonnet / AWS",
     "offline": "Offline TCC/ACT Engine"
 }

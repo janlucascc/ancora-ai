@@ -18,31 +18,45 @@ from src.database.db import (
 )
 from src.ui.i18n import get_text, get_system_language, SUPPORTED_LANGUAGES
 
+TEST_DB = os.path.join(os.path.dirname(__file__), "..", "data", "test_ancora.db")
 
 class TestLGPDAndPreferences(unittest.TestCase):
 
+    def setUp(self):
+        if os.path.exists(TEST_DB):
+            try: os.remove(TEST_DB)
+            except: pass
+
+    def tearDown(self):
+        if os.path.exists(TEST_DB):
+            try: os.remove(TEST_DB)
+            except: pass
+
     def test_preferences_persistence(self):
-        save_preference("theme", "light")
-        save_preference("language", "fr")
-        self.assertEqual(get_preference("theme"), "light")
-        self.assertEqual(get_preference("language"), "fr")
+        save_preference("theme", "light", db_path=TEST_DB)
+        save_preference("language", "pt", db_path=TEST_DB)
+        self.assertEqual(get_preference("theme", db_path=TEST_DB), "light")
+        self.assertEqual(get_preference("language", db_path=TEST_DB), "pt")
 
     def test_lgpd_export_format(self):
-        log_mood(8, ["Tranquilo"], "Teste LGPD", "Reflexao LGPD")
-        data = export_user_data_lgpd()
+        log_mood(8, ["Tranquilo"], "Teste LGPD", "Reflexao LGPD", db_path=TEST_DB)
+        data = export_user_data_lgpd(db_path=TEST_DB)
         self.assertIn("lgpd_compliance", data)
         self.assertIn("mood_logs", data)
         self.assertFalse(data["lgpd_compliance"]["pii_collected"])
 
     def test_lgpd_delete_all_data(self):
-        log_mood(7, ["Focado"], "Gatilho", "Reflexao")
-        deleted = delete_all_user_data_lgpd()
+        log_mood(7, ["Focado"], "Gatilho", "Reflexao", db_path=TEST_DB)
+        deleted = delete_all_user_data_lgpd(db_path=TEST_DB)
         self.assertTrue(deleted)
-        stats = get_mood_stats()
+        stats = get_mood_stats(db_path=TEST_DB)
         self.assertEqual(stats["total_logs"], 0)
 
 
 class TestI18n(unittest.TestCase):
+
+    def test_default_is_portuguese(self):
+        self.assertEqual(get_system_language(), "pt")
 
     def test_supported_languages_count(self):
         self.assertGreaterEqual(len(SUPPORTED_LANGUAGES), 8)
