@@ -4,7 +4,7 @@
 [![Built with Strands](https://img.shields.io/badge/Built%20with-Strands%20Agents%20SDK-orange)](https://strandsagents.com)
 [![AWS Bedrock](https://img.shields.io/badge/Powered%20by-AWS%20Bedrock-232F3E?logo=amazon-aws)](https://aws.amazon.com/bedrock/)
 [![Agents for Humans Hackathon](https://img.shields.io/badge/Hackathon-Agents%20for%20Humans%20%7C%20AWS-green)](https://agentsforhumans.devpost.com)
-[![Tests](https://img.shields.io/badge/Tests-23%20passed-brightgreen)]()
+[![Tests](https://img.shields.io/badge/Tests-29%20passed-brightgreen)]()
 
 > **Agents for Humans Hackathon** — in partnership with AWS  
 > **Track:** Everyday Agents | **Repository:** [janlucascc/ancora-ai](https://github.com/janlucascc/ancora-ai)
@@ -56,11 +56,11 @@ ancora-ai/
 │   │   ├── confidence_anchor.py # Cognitive reframing — TCC/ACT methodology
 │   │   └── mood_journal.py      # Daily mood tracking and emotional history
 │   ├── database/
-│   │   └── db.py                # SQLite persistence layer
+│   │   └── db.py                # SQLite persistence layer (Context Manager hardened)
 │   └── ui/
 │       └── app.py               # Streamlit UI — Glassmorphic dark theme
 ├── tests/
-│   └── test_agent.py            # 23 unit tests across all modules
+│   └── test_agent.py            # 29 comprehensive unit tests
 ├── .env.example                 # AWS credential template
 ├── .gitignore
 ├── LICENSE                      # MIT License
@@ -88,14 +88,28 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. Run
+### 3. Run Web Interface
 ```bash
 streamlit run src/ui/app.py
 ```
 
-### 4. Run tests
+### 4. Run Test Suite
 ```bash
 python tests/test_agent.py
+```
+
+---
+
+## 🧪 Test Suite Results
+
+```text
+Ran 29 tests in 0.312s — ALL OK
+
+- TestTokenOptimizer      (5 tests) — Token estimation, sliding window, prompt caching, usage tracking
+- TestGuardrails          (6 tests) — Crisis detection PT/EN, Jailbreak PT/EN, clean messages
+- TestTools               (9 tests) — Wingman, Message Analyzer (empty/professional/neediness), Decompression, Roleplay
+- TestDatabaseEdgeCases   (4 tests) — Clamping, safe limits, stats, coaching & decompression logs
+- TestAgentPipeline       (5 tests) — Empty inputs, crisis, jailbreak, stress, dating routing
 ```
 
 ---

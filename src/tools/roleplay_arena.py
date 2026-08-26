@@ -26,18 +26,23 @@ ROLEPLAY_SCENARIOS = {
 }
 
 def get_scenario_details(scenario_key: str) -> Dict[str, Any]:
-    """Retrieves metadata and opening line for a given roleplay scenario."""
-    return ROLEPLAY_SCENARIOS.get(scenario_key, ROLEPLAY_SCENARIOS["boss_negotiation"])
+    """Retrieves metadata and opening line for a given roleplay scenario with safe fallback."""
+    return ROLEPLAY_SCENARIOS.get(str(scenario_key), ROLEPLAY_SCENARIOS["boss_negotiation"])
 
 def generate_roleplay_turn(scenario_key: str, conversation_history: List[Dict[str, str]], user_input: str) -> Dict[str, Any]:
     """
     Generates simulated character response and real-time coaching tips during roleplay.
+    Accurately tracks user turns regardless of history message roles.
     """
-    scenario = get_scenario_details(scenario_key)
-    turn_index = len(conversation_history) // 2 + 1
+    scenario_key_safe = scenario_key if scenario_key in ROLEPLAY_SCENARIOS else "boss_negotiation"
+    
+    # Count strictly user-initiated turns
+    history_list = conversation_history if isinstance(conversation_history, list) else []
+    user_turns = sum(1 for m in history_list if isinstance(m, dict) and m.get("role") == "user")
+    turn_index = max(1, user_turns)
 
     # Heuristic response templates based on turn
-    if scenario_key == "boss_negotiation":
+    if scenario_key_safe == "boss_negotiation":
         if turn_index == 1:
             reply = "Entendo seu ponto sobre dedicação. Mas me mostre dados concretos: quais projetos liderados por você trouxeram maior retorno ou economia recentemente?"
             coach_tip = "💡 **Dica do Copiloto:** Não fale de necessidades pessoais ('contas/inflação'). Fale de métricas, economia de tempo e projetos entregues."
@@ -48,7 +53,7 @@ def generate_roleplay_turn(scenario_key: str, conversation_history: List[Dict[st
             reply = "Perfeito, combinamos assim. Vou alinhar com o RH para o fechamento do mês. Bom trabalho!"
             coach_tip = "🎉 **Rodada Finalizada:** Você manteve a postura firme, sem desculpas e com foco no valor gerado."
     
-    elif scenario_key == "first_date_silence":
+    elif scenario_key_safe == "first_date_silence":
         if turn_index == 1:
             reply = "Nossa, adorei isso! Sério que você curte isso? Eu achava que quase ninguém tinha paciência pra isso hoje em dia haha. Me conta mais sobre isso!"
             coach_tip = "💡 **Dica do Wingman:** Use essa abertura para contar uma história curta e divertida com paixão, depois devolva a bola pra ela."
@@ -67,7 +72,7 @@ def generate_roleplay_turn(scenario_key: str, conversation_history: List[Dict[st
             reply = "Muito bom te conhecer! Vamos trocar contato no LinkedIn / Insta pra mantermos o networking ativo?"
             coach_tip = "🎉 **Rodada Finalizada:** Entrada suave no grupo e encerramento de alto valor."
 
-    # Generate scorecard if reached 3 turns
+    # Generate scorecard if reached 3 or more turns
     scorecard = None
     if turn_index >= 3:
         scorecard = {
@@ -77,7 +82,10 @@ def generate_roleplay_turn(scenario_key: str, conversation_history: List[Dict[st
             "emotional_intelligence": "Alta (92%)",
             "summary": "Você demonstrou excelente controle situacional, sem agressividade ou submissão."
         }
-        log_roleplay_session(scenario_key=scenario_key, turns_count=turn_index, scorecard=scorecard)
+        try:
+            log_roleplay_session(scenario_key=scenario_key_safe, turns_count=turn_index, scorecard=scorecard)
+        except Exception as e:
+            print(f"Non-critical roleplay logging warning: {e}")
 
     return {
         "reply": reply,
