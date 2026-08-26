@@ -14,10 +14,17 @@ from src.tools.social_wingman import generate_wingman_advice
 from src.tools.message_analyzer import analyze_message_and_rewrite
 from src.tools.roleplay_arena import ROLEPLAY_SCENARIOS, get_scenario_details, generate_roleplay_turn
 from src.database.db import get_mood_stats
+from src.ui.i18n import get_system_language, get_text, TRANSLATIONS
+
+# Auto-detect language once
+if "lang" not in st.session_state:
+    st.session_state.lang = get_system_language()
+
+lang = st.session_state.lang
 
 # Page Config
 st.set_page_config(
-    page_title="Ancora AI | Life & Social Copilot",
+    page_title=get_text("app_title", lang),
     page_icon="⚓",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -54,16 +61,11 @@ st.markdown("""
         max-width: 940px !important;
     }
 
-    /* Sidebar Styling */
     [data-testid="stSidebar"] {
         background-color: var(--bg-sidebar) !important;
         border-right: 1px solid var(--border-color) !important;
     }
-    [data-testid="stSidebar"] hr {
-        border-color: var(--border-color) !important;
-    }
 
-    /* Fade-in Animation for smooth UX */
     @keyframes fadeInSlide {
         from { opacity: 0; transform: translateY(6px); }
         to { opacity: 1; transform: translateY(0); }
@@ -73,7 +75,6 @@ st.markdown("""
         animation: fadeInSlide 0.25s ease-out;
     }
 
-    /* Live Online Status Indicator */
     .status-dot {
         display: inline-block;
         width: 7px;
@@ -89,7 +90,6 @@ st.markdown("""
         50% { opacity: 0.4; transform: scale(0.85); }
     }
 
-    /* Top Bar */
     .ancora-topbar {
         display: flex;
         align-items: center;
@@ -102,8 +102,6 @@ st.markdown("""
         font-size: 0.95rem;
         font-weight: 600;
         color: #f1f5f9;
-        display: flex;
-        align-items: center;
     }
     .topbar-badge {
         font-size: 0.75rem;
@@ -113,16 +111,8 @@ st.markdown("""
         padding: 4px 12px;
         border-radius: 12px;
         font-weight: 500;
-        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
     }
 
-    .stChatMessage {
-        background-color: transparent !important;
-        border: none !important;
-        padding: 6px 0px !important;
-    }
-
-    /* User Message Bubble */
     .user-bubble {
         background-color: var(--bg-user-bubble);
         border: 1px solid rgba(255,255,255,0.06);
@@ -131,18 +121,16 @@ st.markdown("""
         color: #f8fafc;
         font-size: 0.95rem;
         line-height: 1.5;
-        margin-bottom: 10px;
+        margin-bottom: 12px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
-    /* Assistant Message */
     .assistant-body {
         color: #e2e8f0;
         font-size: 0.95rem;
         line-height: 1.65;
     }
 
-    /* Thought Box (Methodology Accordion) */
     .thought-container {
         background-color: rgba(25, 26, 34, 0.7);
         border-left: 2px solid #38bdf8;
@@ -154,7 +142,6 @@ st.markdown("""
         font-family: 'JetBrains Mono', monospace;
     }
 
-    /* Button Polish & Transitions */
     .stButton>button {
         background: linear-gradient(180deg, #1b1c24 0%, #16171d 100%) !important;
         color: var(--text-main) !important;
@@ -170,19 +157,16 @@ st.markdown("""
         transform: translateY(-1px) !important;
     }
 
-    /* Floating Input Field */
     .stChatInput {
         border-color: var(--border-color) !important;
         background-color: var(--bg-sidebar) !important;
         border-radius: 14px !important;
-        transition: all 0.2s ease !important;
     }
     .stChatInput:focus-within {
         border-color: var(--accent-blue) !important;
         box-shadow: 0 0 15px rgba(59, 130, 246, 0.25) !important;
     }
 
-    /* Cards with Glow Hover */
     .ide-card {
         background: linear-gradient(180deg, #191a22 0%, #15161c 100%);
         border: 1px solid var(--border-color);
@@ -196,37 +180,24 @@ st.markdown("""
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35), 0 0 12px rgba(56, 189, 248, 0.12);
         transform: translateY(-1px);
     }
-
-    /* Scrollbar */
-    ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-        background: transparent;
-    }
-    ::-webkit-scrollbar-thumb {
-        background: #272833;
-        border-radius: 3px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-        background: #3b82f6;
-    }
 </style>
 """, unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════
 # SESSION STATE MANAGEMENT
 # ══════════════════════════════════════════════════════════════
+if "selected_model" not in st.session_state:
+    st.session_state.selected_model = "gemini-3.6-flash"
+
 if "conversations" not in st.session_state:
     st.session_state.conversations = {
         "conv_1": {
-            "title": "Clareza & Alinhamento TCC",
+            "title": "Clareza & Alinhamento TCC" if lang == "pt" else "Clarity & CBT Alignment",
             "messages": [
                 {
                     "role": "assistant",
-                    "thought": "Sistema inicializado. Protocolo de psicologia comportamental e inteligência social ativo.",
-                    "content": "Olá. Eu sou o **Ancora AI** — trabalho com psicologia comportamental (TCC/ACT) e inteligência social para trazer clareza prática e honesta nos momentos de estresse, trabalho ou relacionamentos.\n\nO que você gostaria de colocar na mesa hoje?"
+                    "thought": "Sistema inicializado. Protocolo de psicologia comportamental ativo.",
+                    "content": get_text("default_welcome", lang)
                 }
             ]
         }
@@ -236,82 +207,119 @@ if "current_conv_id" not in st.session_state:
     st.session_state.current_conv_id = "conv_1"
 
 if "agent" not in st.session_state:
-    st.session_state.agent = AncoraAgent()
+    st.session_state.agent = AncoraAgent(model_id=st.session_state.selected_model, lang=lang)
 
 if "active_mode" not in st.session_state:
-    st.session_state.active_mode = "Chat Livre"
-
-for c in st.session_state.conversations.values():
-    c["title"] = c["title"].replace("⚓", "").replace("💬", "").strip()
-    if not c["title"]:
-        c["title"] = "Conversa"
+    st.session_state.active_mode = get_text("mode_chat", lang)
 
 current_conv = st.session_state.conversations[st.session_state.current_conv_id]
 
 # ══════════════════════════════════════════════════════════════
-# SIDEBAR (Ancora AI Navigation Workspace)
+# SIDEBAR
 # ══════════════════════════════════════════════════════════════
 with st.sidebar:
-    st.markdown("### ⚓ **Ancora AI** <span style='font-size:0.75rem; color:#64748b;'>v2.0</span>", unsafe_allow_html=True)
-    st.markdown("<span class='status-dot'></span><small style='color:#94a3b8;'>Âncora Ativa & Pronta</small>", unsafe_allow_html=True)
+    st.markdown(f"### ⚓ **{get_text('sidebar_brand', lang)}** <span style='font-size:0.75rem; color:#64748b;'>v2.0</span>", unsafe_allow_html=True)
+    st.markdown(f"<span class='status-dot'></span><small style='color:#94a3b8;'>{get_text('sidebar_status', lang)}</small>", unsafe_allow_html=True)
     st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 
     # New Conversation Button
-    if st.button("＋ Nova Conversa", use_container_width=True):
+    if st.button(get_text("new_chat_btn", lang), use_container_width=True):
         new_id = f"conv_{len(st.session_state.conversations) + 1}"
         st.session_state.conversations[new_id] = {
             "title": f"Conversa {len(st.session_state.conversations) + 1}",
             "messages": [
                 {
                     "role": "assistant",
-                    "thought": "Nova sessão criada. Princípios de honestidade, separação de fatos e grounding ativos.",
-                    "content": "Nova sessão iniciada. O que está acontecendo agora que você quer examinar com clareza?"
+                    "thought": "Nova sessão criada.",
+                    "content": "Nova sessão iniciada. O que está acontecendo agora que você quer examinar com clareza?" if lang == "pt" else "New session started. What would you like to examine clearly today?"
                 }
             ]
         }
         st.session_state.current_conv_id = new_id
-        st.session_state.active_mode = "Chat Livre"
+        st.session_state.active_mode = get_text("mode_chat", lang)
         st.rerun()
 
     st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
 
-    # Clean Mode Selector
-    st.caption("FERRAMENTAS & MODOS")
-    selected_mode = st.radio(
-        "Modo:",
-        ["Chat Livre", "Message Lab (Flerte/Trabalho)", "Arena de Simulação (Roleplay)", "Descompressão Somática", "Dashboard & Métricas"],
-        label_visibility="collapsed"
-    )
+    # Mode Selector
+    st.caption(get_text("tools_heading", lang))
+    mode_options = [
+        get_text("mode_chat", lang),
+        get_text("mode_msg_lab", lang),
+        get_text("mode_roleplay", lang),
+        get_text("mode_decompress", lang),
+        get_text("mode_dashboard", lang)
+    ]
+    selected_mode = st.radio("Modo:", mode_options, label_visibility="collapsed")
     st.session_state.active_mode = selected_mode
 
     st.divider()
 
     # Conversation History List
-    st.caption("CONVERSAS RECENTES")
+    st.caption(get_text("recent_convs", lang))
     for cid, cdata in list(st.session_state.conversations.items()):
         is_active = (cid == st.session_state.current_conv_id)
         display_title = cdata['title'][:22]
         label = f"• {display_title}..." if is_active else f"  {display_title}..."
         if st.button(label, key=f"btn_{cid}", use_container_width=True):
             st.session_state.current_conv_id = cid
-            st.session_state.active_mode = "Chat Livre"
+            st.session_state.active_mode = get_text("mode_chat", lang)
             st.rerun()
 
     st.divider()
 
-    # Settings Drawer
-    with st.expander("⚙️ Configurações & API Keys"):
-        custom_key = st.text_input("Google Gemini API Key (Opcional):", type="password", placeholder="AIzaSy...")
-        if st.button("Salvar Chave", use_container_width=True):
+    # Settings & Model Selection Drawer
+    with st.expander(get_text("settings_heading", lang)):
+        # 1. Model Selector
+        model_choices = {
+            "gemini-3.6-flash": "⚡ Gemini 3.6 Flash (Padrão Rápido)",
+            "gemini-3.7-flash": "🧠 Gemini 3.7 Flash (Raciocínio)",
+            "claude-3-5-sonnet": "🏛️ Claude 3.5 Sonnet (AWS Bedrock)",
+            "offline": "🛡️ Modo Offline (TCC/ACT Local)"
+        }
+        chosen_model_key = st.selectbox(
+            get_text("model_label", lang),
+            list(model_choices.keys()),
+            format_func=lambda x: model_choices[x],
+            index=list(model_choices.keys()).index(st.session_state.selected_model) if st.session_state.selected_model in model_choices else 0
+        )
+        if chosen_model_key != st.session_state.selected_model:
+            st.session_state.selected_model = chosen_model_key
+            st.session_state.agent = AncoraAgent(model_id=chosen_model_key, lang=lang)
+            st.toast(f"Modelo alterado para: {model_choices[chosen_model_key]}")
+
+        # 2. Language Selector
+        lang_choices = {"pt": "🇧🇷 Português (Brasil)", "en": "🇺🇸 English (US)"}
+        chosen_lang = st.selectbox(
+            get_text("lang_label", lang),
+            ["pt", "en"],
+            format_func=lambda x: lang_choices[x],
+            index=0 if lang == "pt" else 1
+        )
+        if chosen_lang != st.session_state.lang:
+            st.session_state.lang = chosen_lang
+            st.rerun()
+
+        # 3. Gemini API Key input
+        custom_key = st.text_input("Gemini API Key:", type="password", placeholder="AQ.Ab8RN...")
+        if st.button("Salvar Chave / Save Key", use_container_width=True):
             if custom_key:
                 os.environ["GEMINI_API_KEY"] = custom_key
-                st.session_state.agent = AncoraAgent(api_key=custom_key)
-                st.success("Motor Gemini conectado com sucesso!")
-        st.caption("AWS Bedrock ativo via `.env` ou chaves IAM.")
+                st.session_state.agent = AncoraAgent(api_key=custom_key, model_id=st.session_state.selected_model, lang=lang)
+                st.success("Chave salva com sucesso!")
 
 # ══════════════════════════════════════════════════════════════
 # MAIN CANVAS
 # ══════════════════════════════════════════════════════════════
+
+# Model Badge Label
+model_display_names = {
+    "gemini-3.6-flash": "Gemini 3.6 Flash / Live",
+    "gemini-3.7-flash": "Gemini 3.7 Flash / Deep",
+    "claude-3-5-sonnet": "Claude 3.5 Sonnet / AWS Bedrock",
+    "offline": "Offline TCC/ACT Engine"
+}
+active_model_badge = model_display_names.get(st.session_state.selected_model, "Gemini Live")
 
 # Top Bar
 st.markdown(f"""
@@ -320,13 +328,14 @@ st.markdown(f"""
         ⚓ {current_conv['title']} &nbsp;·&nbsp; <span style="font-weight:400; font-size:0.8rem; color:#64748b;">Modo: {st.session_state.active_mode}</span>
     </div>
     <div class="topbar-badge">
-        Claude 3.5 Sonnet / ACT & TCC Engine
+        {active_model_badge}
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 # ─── VIEW 1: CHAT LIVRE ──────────────────────────────────────
-if st.session_state.active_mode == "Chat Livre":
+if st.session_state.active_mode == get_text("mode_chat", lang):
+    # Render all historic messages
     for msg in current_conv["messages"]:
         if msg["role"] == "user":
             st.markdown(f"""
@@ -336,7 +345,7 @@ if st.session_state.active_mode == "Chat Livre":
             """, unsafe_allow_html=True)
         else:
             if msg.get("thought"):
-                with st.expander("💡 Thought process (TCC / ACT Method)"):
+                with st.expander(get_text("thought_title", lang)):
                     st.markdown(f"""
                     <div class="thought-container">
                         {msg['thought']}
@@ -350,15 +359,29 @@ if st.session_state.active_mode == "Chat Livre":
             """, unsafe_allow_html=True)
             st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
 
-    if user_prompt := st.chat_input("Digite sua dúvida, desabafo ou situação..."):
+    # User Input & Instant Message Display
+    if user_prompt := st.chat_input(get_text("input_placeholder", lang)):
+        # 1. Immediately append to conversation history
         current_conv["messages"].append({"role": "user", "content": user_prompt})
         
+        # 2. Render user message right away so it appears on screen immediately!
+        st.markdown(f"""
+        <div class="user-bubble">
+            {user_prompt}
+        </div>
+        """, unsafe_allow_html=True)
+
         if len(current_conv["messages"]) == 2:
             clean_title = user_prompt.replace("⚓", "").replace("💬", "").strip()
             current_conv["title"] = clean_title[:25]
 
-        with st.spinner("Analisando com metodologia comportamental..."):
-            response_dict = st.session_state.agent.respond(user_prompt)
+        # 3. Model generation with spinner
+        with st.spinner(get_text("analyzing_spinner", lang)):
+            response_dict = st.session_state.agent.respond(
+                user_prompt,
+                model_override=st.session_state.selected_model,
+                lang_override=lang
+            )
             current_conv["messages"].append({
                 "role": "assistant",
                 "thought": response_dict.get("thought", ""),
@@ -368,7 +391,7 @@ if st.session_state.active_mode == "Chat Livre":
         st.rerun()
 
 # ─── VIEW 2: MESSAGE LAB ─────────────────────────────────────
-elif st.session_state.active_mode == "Message Lab (Flerte/Trabalho)":
+elif st.session_state.active_mode == get_text("mode_msg_lab", lang):
     st.markdown("### 📱 **Message Lab & Flirt Rater**")
     st.caption("Diagnóstico comportamental de mensagens antes do envio. Avalia nível de pressão, segurança e autenticidade.")
 
@@ -376,7 +399,7 @@ elif st.session_state.active_mode == "Message Lab (Flerte/Trabalho)":
     with col1:
         msg_in = st.text_area("Cole a mensagem para análise:", height=140, placeholder="Ex: Oi, vi que você sumiu... queria saber se fiz algo errado...")
         aud = st.radio("Contexto:", ["Romântico / Flerte", "Profissional / Limites"], horizontal=True)
-        if st.button("Diagnosticar Mensagem", type="primary", use_container_width=True):
+        if st.button(get_text("diagnose_btn", lang), type="primary", use_container_width=True):
             if msg_in:
                 res = analyze_message_and_rewrite(msg_in, "romantic" if "Romântico" in aud else "professional")
                 st.session_state["msg_lab_result"] = res
@@ -404,7 +427,7 @@ elif st.session_state.active_mode == "Message Lab (Flerte/Trabalho)":
                 """, unsafe_allow_html=True)
 
 # ─── VIEW 3: ARENA DE SIMULAÇÃO (ROLEPLAY) ───────────────────
-elif st.session_state.active_mode == "Arena de Simulação (Roleplay)":
+elif st.session_state.active_mode == get_text("mode_roleplay", lang):
     st.markdown("### 🎭 **Arena de Simulação em Tempo Real**")
     st.caption("Pratique conversas de alta pressão (negociação com chefe, primeiro encontro, limites) em um ambiente seguro.")
 
@@ -416,7 +439,7 @@ elif st.session_state.active_mode == "Arena de Simulação (Roleplay)":
         st.session_state.rp_chat = [{"role": "partner", "content": meta["initial_message"]}]
         st.session_state.rp_scenario = chosen_k
 
-    if st.button("Reiniciar Simulação"):
+    if st.button(get_text("restart_sim_btn", lang)):
         st.session_state.rp_chat = [{"role": "partner", "content": meta["initial_message"]}]
         st.rerun()
 
@@ -442,7 +465,7 @@ elif st.session_state.active_mode == "Arena de Simulação (Roleplay)":
         st.rerun()
 
 # ─── VIEW 4: DESCOMPRESSÃO SOMÁTICA ─────────────────────────
-elif st.session_state.active_mode == "Descompressão Somática":
+elif st.session_state.active_mode == get_text("mode_decompress", lang):
     st.markdown("### 🫁 **Descompressão & Regulação Somática**")
     st.caption("Protocolos neurocientíficos de alívio rápido para quando o sistema nervoso estiver em sobrecarga.")
 
@@ -477,7 +500,7 @@ elif st.session_state.active_mode == "Descompressão Somática":
         st.audio(urls[s_opt], format="audio/mp3")
 
 # ─── VIEW 5: DASHBOARD & MÉTRICAS ───────────────────────────
-elif st.session_state.active_mode == "Dashboard & Métricas":
+elif st.session_state.active_mode == get_text("mode_dashboard", lang):
     st.markdown("### 📈 **Dashboard & Otimização de Tokens**")
     stats = get_mood_stats()
     token_m = st.session_state.agent.get_token_metrics()
@@ -493,6 +516,6 @@ elif st.session_state.active_mode == "Dashboard & Métricas":
     score_in = st.slider("Nota de Humor (1-10):", 1, 10, 7)
     tag_in = st.multiselect("Sentimentos:", ["Focado", "Confiante", "Tranquilo", "Ansioso", "Sobrecarregado", "Cansado"])
     trig_in = st.text_input("Gatilho ou contexto:")
-    if st.button("Salvar no Diário", use_container_width=True):
+    if st.button(get_text("save_journal_btn", lang), use_container_width=True):
         record_mood_entry(score_in, tag_in, trig_in, "")
         st.success("Salvo com sucesso!")
