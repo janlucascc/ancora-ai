@@ -17,43 +17,44 @@ from src.database.db import get_mood_stats
 
 # Page Config
 st.set_page_config(
-    page_title="Ancora AI | Antigravity Workspace",
+    page_title="Ancora AI | Life & Social Copilot",
     page_icon="⚓",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # ══════════════════════════════════════════════════════════════
-# ANTIGRAVITY DARK THEME & MINIMALIST IDE CSS
+# MODERN DARK GLASSMORPHIC & ANIMATED UI CSS
 # ══════════════════════════════════════════════════════════════
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
     :root {
-        --bg-main: #131417;
-        --bg-sidebar: #18191d;
-        --bg-card: #1e1f25;
-        --bg-user-bubble: #272932;
-        --border-color: #2b2d37;
-        --text-main: #e2e8f0;
+        --bg-main: #0f1013;
+        --bg-sidebar: #14151a;
+        --bg-card: #191a22;
+        --bg-user-bubble: #22242e;
+        --border-color: #272833;
+        --text-main: #f1f5f9;
         --text-muted: #94a3b8;
         --accent-blue: #3b82f6;
-        --accent-hover: #2563eb;
+        --accent-cyan: #38bdf8;
     }
 
     html, body, [class*="css"], .stApp {
         background-color: var(--bg-main) !important;
-        font-family: 'Inter', sans-serif !important;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
         color: var(--text-main) !important;
     }
 
     .block-container {
         padding-top: 1.5rem !important;
         padding-bottom: 5rem !important;
-        max-width: 920px !important;
+        max-width: 940px !important;
     }
 
+    /* Sidebar Styling */
     [data-testid="stSidebar"] {
         background-color: var(--bg-sidebar) !important;
         border-right: 1px solid var(--border-color) !important;
@@ -62,7 +63,34 @@ st.markdown("""
         border-color: var(--border-color) !important;
     }
 
-    .antigravity-topbar {
+    /* Fade-in Animation for smooth UX */
+    @keyframes fadeInSlide {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .user-bubble, .assistant-body, .thought-container, .ide-card {
+        animation: fadeInSlide 0.25s ease-out;
+    }
+
+    /* Live Online Status Indicator */
+    .status-dot {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        background-color: #22c55e;
+        border-radius: 50%;
+        margin-right: 6px;
+        box-shadow: 0 0 8px #22c55e;
+        animation: pulseDot 2s infinite;
+    }
+    @keyframes pulseDot {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* Top Bar */
+    .ancora-topbar {
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -74,82 +102,102 @@ st.markdown("""
         font-size: 0.95rem;
         font-weight: 600;
         color: #f1f5f9;
+        display: flex;
+        align-items: center;
     }
     .topbar-badge {
         font-size: 0.75rem;
-        background: rgba(59, 130, 246, 0.15);
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(56, 189, 248, 0.1) 100%);
         color: #60a5fa;
         border: 1px solid rgba(59, 130, 246, 0.3);
-        padding: 3px 10px;
+        padding: 4px 12px;
         border-radius: 12px;
         font-weight: 500;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
     }
 
     .stChatMessage {
         background-color: transparent !important;
         border: none !important;
-        padding: 8px 0px !important;
+        padding: 6px 0px !important;
     }
 
+    /* User Message Bubble */
     .user-bubble {
         background-color: var(--bg-user-bubble);
         border: 1px solid rgba(255,255,255,0.06);
         border-radius: 12px;
-        padding: 12px 16px;
-        color: #f1f5f9;
+        padding: 13px 18px;
+        color: #f8fafc;
         font-size: 0.95rem;
         line-height: 1.5;
         margin-bottom: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
+    /* Assistant Message */
     .assistant-body {
         color: #e2e8f0;
         font-size: 0.95rem;
-        line-height: 1.6;
+        line-height: 1.65;
     }
 
+    /* Thought Box (Methodology Accordion) */
     .thought-container {
-        background-color: rgba(30, 31, 37, 0.6);
-        border-left: 2px solid #64748b;
+        background-color: rgba(25, 26, 34, 0.7);
+        border-left: 2px solid #38bdf8;
         border-radius: 4px;
-        padding: 8px 14px;
+        padding: 10px 14px;
         margin-bottom: 12px;
         font-size: 0.85rem;
         color: #94a3b8;
         font-family: 'JetBrains Mono', monospace;
     }
 
+    /* Button Polish & Transitions */
     .stButton>button {
-        background-color: var(--bg-card) !important;
+        background: linear-gradient(180deg, #1b1c24 0%, #16171d 100%) !important;
         color: var(--text-main) !important;
         border: 1px solid var(--border-color) !important;
         border-radius: 8px !important;
         font-weight: 500 !important;
-        transition: all 0.2s ease !important;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
     .stButton>button:hover {
         border-color: var(--accent-blue) !important;
-        background-color: #282a33 !important;
+        background: #232530 !important;
+        box-shadow: 0 0 12px rgba(59, 130, 246, 0.25) !important;
+        transform: translateY(-1px) !important;
     }
 
+    /* Floating Input Field */
     .stChatInput {
         border-color: var(--border-color) !important;
         background-color: var(--bg-sidebar) !important;
         border-radius: 14px !important;
+        transition: all 0.2s ease !important;
     }
     .stChatInput:focus-within {
         border-color: var(--accent-blue) !important;
-        box-shadow: 0 0 0 1px var(--accent-blue) !important;
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.25) !important;
     }
 
+    /* Cards with Glow Hover */
     .ide-card {
-        background-color: var(--bg-card);
+        background: linear-gradient(180deg, #191a22 0%, #15161c 100%);
         border: 1px solid var(--border-color);
         border-radius: 10px;
         padding: 16px;
         margin-bottom: 12px;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .ide-card:hover {
+        border-color: rgba(56, 189, 248, 0.4);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35), 0 0 12px rgba(56, 189, 248, 0.12);
+        transform: translateY(-1px);
     }
 
+    /* Scrollbar */
     ::-webkit-scrollbar {
         width: 6px;
         height: 6px;
@@ -158,8 +206,11 @@ st.markdown("""
         background: transparent;
     }
     ::-webkit-scrollbar-thumb {
-        background: #2b2d37;
+        background: #272833;
         border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #3b82f6;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -174,7 +225,7 @@ if "conversations" not in st.session_state:
             "messages": [
                 {
                     "role": "assistant",
-                    "thought": "Sistema inicializado. Protocolo de psicologia comportamental e social ativo.",
+                    "thought": "Sistema inicializado. Protocolo de psicologia comportamental e inteligência social ativo.",
                     "content": "Olá. Eu sou o **Ancora AI** — trabalho com psicologia comportamental (TCC/ACT) e inteligência social para trazer clareza prática e honesta nos momentos de estresse, trabalho ou relacionamentos.\n\nO que você gostaria de colocar na mesa hoje?"
                 }
             ]
@@ -190,7 +241,6 @@ if "agent" not in st.session_state:
 if "active_mode" not in st.session_state:
     st.session_state.active_mode = "Chat Livre"
 
-# Clean up any existing title in session state that had duplicate emojis
 for c in st.session_state.conversations.values():
     c["title"] = c["title"].replace("⚓", "").replace("💬", "").strip()
     if not c["title"]:
@@ -199,11 +249,13 @@ for c in st.session_state.conversations.values():
 current_conv = st.session_state.conversations[st.session_state.current_conv_id]
 
 # ══════════════════════════════════════════════════════════════
-# SIDEBAR (Clean Minimalist Antigravity Navigation)
+# SIDEBAR (Ancora AI Navigation Workspace)
 # ══════════════════════════════════════════════════════════════
 with st.sidebar:
     st.markdown("### ⚓ **Ancora AI** <span style='font-size:0.75rem; color:#64748b;'>v2.0</span>", unsafe_allow_html=True)
-    
+    st.markdown("<span class='status-dot'></span><small style='color:#94a3b8;'>Âncora Ativa & Pronta</small>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+
     # New Conversation Button
     if st.button("＋ Nova Conversa", use_container_width=True):
         new_id = f"conv_{len(st.session_state.conversations) + 1}"
@@ -258,12 +310,12 @@ with st.sidebar:
         st.caption("AWS Bedrock ativo via `.env` ou chaves IAM.")
 
 # ══════════════════════════════════════════════════════════════
-# MAIN CANVAS (Antigravity UI Layout)
+# MAIN CANVAS
 # ══════════════════════════════════════════════════════════════
 
-# Top Bar (Single clean icon)
+# Top Bar
 st.markdown(f"""
-<div class="antigravity-topbar">
+<div class="ancora-topbar">
     <div class="topbar-title">
         ⚓ {current_conv['title']} &nbsp;·&nbsp; <span style="font-weight:400; font-size:0.8rem; color:#64748b;">Modo: {st.session_state.active_mode}</span>
     </div>
