@@ -2,7 +2,7 @@
 import os
 import sys
 import json
-import pandas as pd
+import time
 from datetime import datetime
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
@@ -15,355 +15,443 @@ from src.tools.message_analyzer import analyze_message_and_rewrite
 from src.tools.roleplay_arena import ROLEPLAY_SCENARIOS, get_scenario_details, generate_roleplay_turn
 from src.database.db import get_mood_stats
 
+# Page Config
 st.set_page_config(
-    page_title="Ancora AI | Everyday Life Anchor & Social Wingman",
+    page_title="Ancora AI | Antigravity Workspace",
     page_icon="⚓",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom Styling - Modern Dark Glassmorphic Theme with Glowing Accents
+# ══════════════════════════════════════════════════════════════
+# ANTIGRAVITY DARK THEME & MINIMALIST IDE CSS
+# ══════════════════════════════════════════════════════════════
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap');
-    
-    html, body, [class*="css"] {
-        font-family: 'Plus Jakarta Sans', sans-serif;
-    }
-    
-    .main {
-        background: linear-gradient(135deg, #090d16 0%, #0d1527 50%, #090d16 100%);
-    }
-    
-    .stChatMessage {
-        border-radius: 14px;
-        padding: 12px 18px;
-        margin-bottom: 10px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    }
-    
-    .anchor-hero {
-        background: linear-gradient(90deg, rgba(30, 58, 138, 0.4) 0%, rgba(14, 116, 144, 0.3) 100%);
-        border: 1px solid rgba(56, 189, 248, 0.2);
-        border-radius: 16px;
-        padding: 24px;
-        margin-bottom: 20px;
-        backdrop-filter: blur(10px);
-    }
-    
-    .glass-card {
-        background: rgba(15, 23, 42, 0.75);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 14px;
-        padding: 20px;
-        margin-bottom: 16px;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-        backdrop-filter: blur(8px);
-        transition: transform 0.2s ease, border-color 0.2s ease;
-    }
-    .glass-card:hover {
-        border-color: rgba(56, 189, 248, 0.4);
-        transform: translateY(-2px);
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    /* Global Colors & Reset */
+    :root {
+        --bg-main: #131417;
+        --bg-sidebar: #18191d;
+        --bg-card: #1e1f25;
+        --bg-user-bubble: #272932;
+        --border-color: #2b2d37;
+        --text-main: #e2e8f0;
+        --text-muted: #94a3b8;
+        --accent-blue: #3b82f6;
+        --accent-hover: #2563eb;
     }
 
-    .metric-badge {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-weight: 600;
-        font-size: 0.85rem;
-        margin-right: 8px;
+    html, body, [class*="css"], .stApp {
+        background-color: var(--bg-main) !important;
+        font-family: 'Inter', sans-serif !important;
+        color: var(--text-main) !important;
     }
-    .badge-success { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4); }
-    .badge-warning { background: rgba(234, 179, 8, 0.2); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.4); }
-    .badge-info { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); }
 
-    /* Breathing Circle Animation */
-    .breathing-container {
+    /* Remove default Streamlit padding */
+    .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 5rem !important;
+        max-width: 950px !important;
+    }
+
+    /* Sidebar Styling (Antigravity Look) */
+    [data-testid="stSidebar"] {
+        background-color: var(--bg-sidebar) !important;
+        border-right: 1px solid var(--border-color) !important;
+    }
+    [data-testid="stSidebar"] hr {
+        border-color: var(--border-color) !important;
+    }
+
+    /* Antigravity Header Bar */
+    .antigravity-topbar {
         display: flex;
-        flex-direction: column;
         align-items: center;
-        justify-content: center;
-        padding: 30px;
+        justify-content: space-between;
+        padding: 8px 16px;
+        background-color: transparent;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 24px;
     }
-    .breathing-circle {
-        width: 140px;
-        height: 140px;
-        border-radius: 50%;
-        background: radial-gradient(circle, rgba(56,189,248,0.8) 0%, rgba(14,116,144,0.4) 60%, rgba(15,23,42,0.1) 100%);
-        box-shadow: 0 0 35px rgba(56, 189, 248, 0.6);
-        animation: breath 16s infinite ease-in-out;
+    .topbar-title {
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: var(--text-muted);
     }
-    @keyframes breath {
-        0%, 100% { transform: scale(0.7); opacity: 0.5; }
-        25% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 50px rgba(56, 189, 248, 0.9); }
-        50% { transform: scale(1.3); opacity: 0.9; }
-        75% { transform: scale(0.7); opacity: 0.6; }
+    .topbar-badge {
+        font-size: 0.75rem;
+        background: rgba(59, 130, 246, 0.15);
+        color: #60a5fa;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-weight: 500;
+    }
+
+    /* Chat Bubbles */
+    .stChatMessage {
+        background-color: transparent !important;
+        border: none !important;
+        padding: 8px 0px !important;
+    }
+
+    /* User Message Bubble */
+    .user-bubble {
+        background-color: var(--bg-user-bubble);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 12px;
+        padding: 14px 18px;
+        color: #f1f5f9;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        margin-bottom: 12px;
+    }
+
+    /* Assistant Message */
+    .assistant-body {
+        color: #e2e8f0;
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+
+    /* Thought / Reasoning Collapsible Block (Antigravity Style) */
+    .thought-container {
+        background-color: rgba(30, 31, 37, 0.6);
+        border-left: 2px solid #64748b;
+        border-radius: 4px;
+        padding: 8px 14px;
+        margin-bottom: 14px;
+        font-size: 0.85rem;
+        color: #94a3b8;
+        font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* New Chat Button */
+    .stButton>button {
+        background-color: var(--bg-card) !important;
+        color: var(--text-main) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 8px !important;
+        font-weight: 500 !important;
+        transition: all 0.2s ease !important;
+    }
+    .stButton>button:hover {
+        border-color: var(--accent-blue) !important;
+        background-color: #282a33 !important;
+    }
+
+    /* Bottom Input Container */
+    .stChatInput {
+        border-color: var(--border-color) !important;
+        background-color: var(--bg-sidebar) !important;
+        border-radius: 14px !important;
+    }
+    .stChatInput:focus-within {
+        border-color: var(--accent-blue) !important;
+        box-shadow: 0 0 0 1px var(--accent-blue) !important;
+    }
+
+    /* Cards & Panels */
+    .ide-card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 12px;
+    }
+
+    /* Subtle Scrollbar */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #2b2d37;
+        border-radius: 3px;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Session States
+# ══════════════════════════════════════════════════════════════
+# SESSION STATE MANAGEMENT
+# ══════════════════════════════════════════════════════════════
+if "conversations" not in st.session_state:
+    st.session_state.conversations = {
+        "conv_1": {
+            "title": "⚓ Clareza & Alinhamento TCC",
+            "messages": [
+                {
+                    "role": "assistant",
+                    "thought": "Sistema inicializado. Protocolo de psicologia comportamental e social ativo.",
+                    "content": "Olá. Eu sou o **Ancora AI** ⚓ — trabalho com psicologia comportamental (TCC/ACT) e inteligência social para trazer clareza prática e honesta nos momentos de estresse, trabalho ou relacionamentos.\n\nO que você gostaria de colocar na mesa hoje?"
+                }
+            ]
+        }
+    }
+
+if "current_conv_id" not in st.session_state:
+    st.session_state.current_conv_id = "conv_1"
+
 if "agent" not in st.session_state:
     st.session_state.agent = AncoraAgent()
 
-if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {"role": "assistant", "content": "Olá! Eu sou o **Ancora AI** ⚓ — seu porto seguro diário, mentor de vida e parceiro para desafios no trabalho, vida social e relacionamentos. Como posso te apoiar hoje?"}
-    ]
+if "active_mode" not in st.session_state:
+    st.session_state.active_mode = "Chat Livre"
 
-if "roleplay_history" not in st.session_state:
-    st.session_state.roleplay_history = []
-if "active_scenario" not in st.session_state:
-    st.session_state.active_scenario = "boss_negotiation"
+current_conv = st.session_state.conversations[st.session_state.current_conv_id]
 
-# Sidebar Navigation & Ambient Audio
+# ══════════════════════════════════════════════════════════════
+# SIDEBAR (Antigravity Navigation Style)
+# ══════════════════════════════════════════════════════════════
 with st.sidebar:
-    st.title("⚓ Ancora AI")
-    st.caption("Autonomous Everyday Anchor & Social Wingman | Built with Strands & AWS Bedrock")
+    st.markdown("### ⚓ **Antigravity** <span style='font-size:0.75rem; color:#64748b;'>v2.0</span>", unsafe_allow_html=True)
+    
+    # New Conversation Button
+    if st.button("＋ New Conversation", use_container_width=True):
+        new_id = f"conv_{len(st.session_state.conversations) + 1}"
+        st.session_state.conversations[new_id] = {
+            "title": f"Nova Conversa {len(st.session_state.conversations) + 1}",
+            "messages": [
+                {
+                    "role": "assistant",
+                    "thought": "Nova sessão criada. Princípios de honestidade, separação de fatos e grounding ativos.",
+                    "content": "Nova sessão iniciada. O que está acontecendo agora que você quer examinar com clareza?"
+                }
+            ]
+        }
+        st.session_state.current_conv_id = new_id
+        st.rerun()
+
+    st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+
+    # Mode Selector
+    st.caption("FERRAMENTAS & MODOS")
+    selected_mode = st.radio(
+        "Modo:",
+        ["Chat Livre", "Message Lab (Flerte/Trabalho)", "Arena de Simulação (Roleplay)", "Descompressão Somática", "Dashboard & Métricas"],
+        label_visibility="collapsed"
+    )
+    st.session_state.active_mode = selected_mode
+
     st.divider()
 
-    st.subheader("🎧 Som Ambiente Relaxante")
-    sound_choice = st.selectbox("Escolha um ambiente para focar ou desestressar:", [
-        ("rain", "🌧️ Chuva Suave"),
-        ("waves", "🌊 Ondas do Oceano"),
-        ("fire", "🔥 Lareira Aconchegante")
-    ], format_func=lambda x: x[1])
-
-    audio_urls = {
-        "rain": "https://assets.mixkit.co/active_storage/sfx/1253/1253-preview.mp3",
-        "waves": "https://assets.mixkit.co/active_storage/sfx/1189/1189-preview.mp3",
-        "fire": "https://assets.mixkit.co/active_storage/sfx/1243/1243-preview.mp3"
-    }
-    st.audio(audio_urls[sound_choice[0]], format="audio/mp3")
-
-    st.divider()
-    st.subheader("⚡ Ações Rápidas de Grounding")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("⚡ Suspiro 1m", use_container_width=True):
-            st.session_state.messages.append({"role": "user", "content": "Preciso do Suspiro Fisiológico para acalmar agora."})
-            resp = st.session_state.agent.respond("suspiro")
-            st.session_state.messages.append({"role": "assistant", "content": resp})
+    # Conversation History List (Like Antigravity sidebar)
+    st.caption("CONVERSAS RECENTES")
+    for cid, cdata in list(st.session_state.conversations.items()):
+        is_active = (cid == st.session_state.current_conv_id)
+        label = f"💬 {cdata['title'][:22]}..." if is_active else f"{cdata['title'][:22]}..."
+        if st.button(label, key=f"btn_{cid}", use_container_width=True):
+            st.session_state.current_conv_id = cid
+            st.session_state.active_mode = "Chat Livre"
             st.rerun()
-    with col2:
-        if st.button("🫁 Respiração 2m", use_container_width=True):
-            st.session_state.messages.append({"role": "user", "content": "Quero fazer a Respiração Quadrada."})
-            resp = st.session_state.agent.respond("respira")
-            st.session_state.messages.append({"role": "assistant", "content": resp})
-            st.rerun()
 
     st.divider()
-    st.subheader("📊 Registrar Energia do Dia")
-    mood_val = st.slider("Nota de 1 a 10:", 1, 10, 7)
-    emotions_selected = st.multiselect("Sentimentos:", ["Tranquilo", "Ansioso", "Confiante", "Cansado", "Animado", "Sobrecarregado", "Focado"])
-    trigger_note = st.text_input("Gatilho ou contexto rápido:")
-    if st.button("💾 Salvar Registro", use_container_width=True):
-        record_mood_entry(mood_val, emotions_selected, trigger_note, "")
-        st.success("Registro de humor salvo!")
 
-# Main Tabs Layout
-tab_chat, tab_wingman, tab_roleplay, tab_decompress, tab_analytics = st.tabs([
-    "💬 Chat Âncora", "📱 Message Lab & Wingman", "🎭 Arena de Simulação", "🫁 Descompressão Visual", "📈 Dashboard & Métricas"
-])
+    # Settings / Provider Info at the Bottom
+    with st.expander("⚙️ Configurações & API Keys"):
+        custom_key = st.text_input("Google Gemini API Key (Opcional):", type="password", placeholder="AIzaSy...")
+        if st.button("Salvar Chave", use_container_width=True):
+            if custom_key:
+                os.environ["GEMINI_API_KEY"] = custom_key
+                st.session_state.agent = AncoraAgent(api_key=custom_key)
+                st.success("Motor Gemini conectado com sucesso!")
+        st.caption("AWS Bedrock ativo via `.env` ou chaves IAM.")
 
-# 1. TAB: Chat Principal
-with tab_chat:
-    st.markdown("""
-    <div class="anchor-hero">
-        <h3 style="margin:0; color:#38bdf8;">⚓ Santuário de Clareza Mental & Orientação Diária</h3>
-        <p style="margin:5px 0 0 0; color:#94a3b8;">Desabafe sem julgamentos, tire dúvidas de carreira, relacionamento ou peça um reset mental.</p>
+# ══════════════════════════════════════════════════════════════
+# MAIN CANVAS (Antigravity UI Layout)
+# ══════════════════════════════════════════════════════════════
+
+# Top Bar
+st.markdown(f"""
+<div class="antigravity-topbar">
+    <div class="topbar-title">
+        ⚓ <strong>{current_conv['title']}</strong> &nbsp;·&nbsp; <span style="font-size:0.8rem; color:#64748b;">Modo: {st.session_state.active_mode}</span>
     </div>
-    """, unsafe_allow_html=True)
+    <div class="topbar-badge">
+        Claude 3.5 Sonnet / ACT & TCC Engine
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"], avatar="⚓" if msg["role"] == "assistant" else None):
-            st.markdown(msg["content"])
-
-    if user_prompt := st.chat_input("Escreva o que está na sua cabeça agora..."):
-        st.session_state.messages.append({"role": "user", "content": user_prompt})
-        with st.chat_message("user"):
-            st.markdown(user_prompt)
-
-        response = st.session_state.agent.respond(user_prompt)
-        st.session_state.messages.append({"role": "assistant", "content": response})
-        with st.chat_message("assistant", avatar="⚓"):
-            st.markdown(response)
-
-# 2. TAB: Message Lab & Wingman
-with tab_wingman:
-    st.header("📱 Message Lab | Analisador de Mensagens & Flerte")
-    st.write("Avalie mensagens antes de enviar ou descubra a resposta perfeita para conversas travadas.")
-
-    col_w1, col_w2 = st.columns([1, 1])
-    with col_w1:
-        msg_input = st.text_area(
-            "Cole a mensagem que você quer enviar (ou recebeu):",
-            placeholder="Ex: Oi, tudo bem? Vi sua foto viajando... achei muito bonita, queria saber que lugar é esse haha se você puder me falar...",
-            height=130
-        )
-        target = st.radio("Contexto da Mensagem:", ["Romântico / Flerte / Social", "Profissional / Trabalho & Limites"], horizontal=True)
-        analyze_btn = st.button("🔥 Analisar Mensagem com IA", type="primary", use_container_width=True)
-
-    with col_w2:
-        if analyze_btn and msg_input:
-            ctx_key = "romantic" if "Romântico" in target else "professional"
-            res = analyze_message_and_rewrite(msg_input, ctx_key)
-            
+# ─── VIEW 1: CHAT LIVRE (Default Antigravity View) ───────────
+if st.session_state.active_mode == "Chat Livre":
+    # Render Conversation Messages
+    for msg in current_conv["messages"]:
+        if msg["role"] == "user":
             st.markdown(f"""
-            <div class="glass-card">
+            <div class="user-bubble">
+                {msg['content']}
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            # Render Thought / Reasoning Box if available (Antigravity Style)
+            if msg.get("thought"):
+                with st.expander(f"💡 Thought process (TCC / ACT Method)"):
+                    st.markdown(f"""
+                    <div class="thought-container">
+                        {msg['thought']}
+                    </div>
+                    """, unsafe_allow_html=True)
+
+            # Assistant Content
+            st.markdown(f"""
+            <div class="assistant-body">
+                {msg['content']}
+            </div>
+            """, unsafe_allow_html=True)
+            st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
+
+    # Bottom Chat Input (Antigravity floating style)
+    if user_prompt := st.chat_input("Digite sua dúvida, desabafo ou situação..."):
+        # Append User Msg
+        current_conv["messages"].append({"role": "user", "content": user_prompt})
+        
+        # Auto-update conversation title on first user turn
+        if len(current_conv["messages"]) == 2:
+            current_conv["title"] = user_prompt[:25]
+
+        # Generate Response via Agent
+        with st.spinner("Analisando com metodologia comportamental..."):
+            response_dict = st.session_state.agent.respond(user_prompt)
+            current_conv["messages"].append({
+                "role": "assistant",
+                "thought": response_dict.get("thought", ""),
+                "content": response_dict.get("content", "")
+            })
+
+        st.rerun()
+
+# ─── VIEW 2: MESSAGE LAB & WINGMAN ───────────────────────────
+elif st.session_state.active_mode == "Message Lab (Flerte/Trabalho)":
+    st.markdown("### 📱 **Message Lab & Flirt Rater**")
+    st.caption("Diagnóstico comportamental de mensagens antes do envio. Avalia nível de pressão, segurança e autenticidade.")
+
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        msg_in = st.text_area("Cole a mensagem para análise:", height=140, placeholder="Ex: Oi, vi que você sumiu... queria saber se fiz algo errado...")
+        aud = st.radio("Contexto:", ["Romântico / Flerte", "Profissional / Limites"], horizontal=True)
+        if st.button("🔥 Diagnosticar Mensagem", type="primary", use_container_width=True):
+            if msg_in:
+                res = analyze_message_and_rewrite(msg_in, "romantic" if "Romântico" in aud else "professional")
+                st.session_state["msg_lab_result"] = res
+
+    with col2:
+        if "msg_lab_result" in st.session_state:
+            res = st.session_state["msg_lab_result"]
+            st.markdown(f"""
+            <div class="ide-card">
                 <h4>📊 Diagnóstico da Mensagem</h4>
-                <p><span class="metric-badge badge-info">Confiança: {res['confidence_score']}/100</span>
-                <span class="metric-badge badge-warning">Carência: {res['neediness_level']}</span>
-                <span class="metric-badge badge-success">Banter: {res['banter_level']}</span></p>
+                <p><strong>Confiança:</strong> <code>{res['confidence_score']}/100</code></p>
+                <p><strong>Nível de Pressão/Carência:</strong> {res['neediness_level']}</p>
+                <p><strong>Engajamento/Banter:</strong> {res['banter_level']}</p>
             </div>
             """, unsafe_allow_html=True)
 
-            st.subheader("💡 3 Sugestões de Alto Valor")
+            st.markdown("#### 💡 3 Alternativas Estruturadas:")
             for rw in res["rewrites"]:
-                with st.expander(f"{rw['style']}", expanded=True):
-                    st.code(rw["text"], language="text")
-                    st.caption(f"**Por que funciona:** {rw['rationale']}")
+                st.markdown(f"""
+                <div class="ide-card" style="border-left: 3px solid #3b82f6;">
+                    <span style="font-size:0.8rem; color:#60a5fa; font-weight:600;">{rw['style']}</span>
+                    <p style="margin:6px 0; font-size:0.95rem; font-weight:500;">"{rw['text']}"</p>
+                    <small style="color:#94a3b8;"><em>{rw['rationale']}</em></small>
+                </div>
+                """, unsafe_allow_html=True)
 
-# 3. TAB: Arena de Simulação (Roleplay)
-with tab_roleplay:
-    st.header("🎭 Arena de Simulação & Treinamento em Tempo Real")
-    st.write("Pratique conversas difíceis da vida real em um ambiente 100% seguro com feedback imediato.")
+# ─── VIEW 3: ARENA DE SIMULAÇÃO (ROLEPLAY) ───────────────────
+elif st.session_state.active_mode == "Arena de Simulação (Roleplay)":
+    st.markdown("### 🎭 **Arena de Simulação em Tempo Real**")
+    st.caption("Pratique conversas de alta pressão (negociação com chefe, primeiro encontro, limites) em um ambiente seguro.")
 
-    scenario_options = {k: v["title"] for k, v in ROLEPLAY_SCENARIOS.items()}
-    chosen_scenario_key = st.selectbox("Escolha o cenário para simular:", list(scenario_options.keys()), format_func=lambda x: scenario_options[x])
+    scenarios = {k: v["title"] for k, v in ROLEPLAY_SCENARIOS.items()}
+    chosen_k = st.selectbox("Selecione o cenário:", list(scenarios.keys()), format_func=lambda x: scenarios[x])
+    meta = get_scenario_details(chosen_k)
 
-    scenario_meta = get_scenario_details(chosen_scenario_key)
+    if "rp_chat" not in st.session_state or st.session_state.get("rp_scenario") != chosen_k:
+        st.session_state.rp_chat = [{"role": "partner", "content": meta["initial_message"]}]
+        st.session_state.rp_scenario = chosen_k
 
-    if st.button("🔄 Reiniciar Simulação", use_container_width=False):
-        st.session_state.roleplay_history = [{"role": "partner", "content": scenario_meta["initial_message"]}]
-        st.session_state.active_scenario = chosen_scenario_key
+    if st.button("🔄 Reiniciar Simulação"):
+        st.session_state.rp_chat = [{"role": "partner", "content": meta["initial_message"]}]
         st.rerun()
 
-    if not st.session_state.roleplay_history or st.session_state.active_scenario != chosen_scenario_key:
-        st.session_state.roleplay_history = [{"role": "partner", "content": scenario_meta["initial_message"]}]
-        st.session_state.active_scenario = chosen_scenario_key
-
-    st.info(f"**Interlocutor:** {scenario_meta['partner_name']} ({scenario_meta['partner_role']})")
-
-    for m in st.session_state.roleplay_history:
+    for m in st.session_state.rp_chat:
         if m["role"] == "partner":
-            with st.chat_message("assistant", avatar="👤"):
-                st.markdown(m["content"])
+            st.markdown(f"""<div class="ide-card" style="border-left: 3px solid #8b5cf6;"><strong>{meta['partner_name']}:</strong> {m['content']}</div>""", unsafe_allow_html=True)
         elif m["role"] == "user":
-            with st.chat_message("user"):
-                st.markdown(m["content"])
+            st.markdown(f"""<div class="user-bubble">{m['content']}</div>""", unsafe_allow_html=True)
         elif m["role"] == "coach":
-            st.info(m["content"])
+            st.markdown(f"""<div class="thought-container">{m['content']}</div>""", unsafe_allow_html=True)
 
-    user_reply = st.chat_input("Digite sua resposta na simulação...", key="roleplay_input")
-    if user_reply:
-        st.session_state.roleplay_history.append({"role": "user", "content": user_reply})
-        turn_result = generate_roleplay_turn(chosen_scenario_key, st.session_state.roleplay_history, user_reply)
-        
-        st.session_state.roleplay_history.append({"role": "partner", "content": turn_result["reply"]})
-        if turn_result.get("coach_tip"):
-            st.session_state.roleplay_history.append({"role": "coach", "content": turn_result["coach_tip"]})
-        
-        if turn_result.get("scorecard"):
-            sc = turn_result["scorecard"]
+    rp_input = st.chat_input("Digite sua resposta na simulação...")
+    if rp_input:
+        st.session_state.rp_chat.append({"role": "user", "content": rp_input})
+        turn_out = generate_roleplay_turn(chosen_k, st.session_state.rp_chat, rp_input)
+        st.session_state.rp_chat.append({"role": "partner", "content": turn_out["reply"]})
+        if turn_out.get("coach_tip"):
+            st.session_state.rp_chat.append({"role": "coach", "content": turn_out["coach_tip"]})
+        if turn_out.get("scorecard"):
+            sc = turn_out["scorecard"]
             st.balloons()
-            st.success(f"🏆 **Simulação Concluída! Nota Geral: {sc['overall_score']}/100**\n\n- **Clareza:** {sc['clarity']}\n- **Confiança:** {sc['confidence']}\n- **Inteligência Emocional:** {sc['emotional_intelligence']}\n\n*Resumo:* {sc['summary']}")
+            st.success(f"🏆 Simulação Concluída! Nota: {sc['overall_score']}/100 | Clareza: {sc['clarity']} | Confiança: {sc['confidence']}")
         st.rerun()
 
-# 4. TAB: Descompressão Visual
-with tab_decompress:
-    st.header("🫁 Central de Descompressão Visual & Somática")
-    st.write("Exercícios somáticos para acalmar os batimentos cardíacos e silenciar a mente.")
+# ─── VIEW 4: DESCOMPRESSÃO SOMÁTICA ─────────────────────────
+elif st.session_state.active_mode == "Descompressão Somática":
+    st.markdown("### 🫁 **Descompressão & Regulação Somática**")
+    st.caption("Protocolos neurocientíficos de alívio rápido para quando o sistema nervoso estiver em sobrecarga.")
 
-    col_d1, col_d2 = st.columns([1, 1])
-    with col_d1:
-        st.markdown("""
-        <div class="glass-card breathing-container">
-            <h4 style="color:#38bdf8; text-align:center;">Guia Visual de Respiração</h4>
-            <p style="color:#94a3b8; font-size:0.85rem; text-align:center;">Acompanhe o ritmo: Inspire quando expandir, segure no topo, expire quando contrair.</p>
-            <div class="breathing-circle"></div>
-            <p style="margin-top:20px; font-weight:600; color:#38bdf8;">Inspire (4s) ➔ Segure (4s) ➔ Expire (4s) ➔ Segure (4s)</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col_d2:
-        st.subheader("⚡ Escolha a Técnica Guiada")
-        t_choice = st.radio("Técnicas Rápidas:", [
-            ("physiological_sigh", "⚡ Suspiro Fisiológico (Alívio em 1 min)"),
-            ("box_breathing", "🫁 Respiração Quadrada (Navy SEALs)"),
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        tech = st.selectbox("Escolha o protocolo:", [
+            ("physiological_sigh", "⚡ Suspiro Fisiológico (Huberman — Alívio em 1 min)"),
+            ("box_breathing", "🫁 Box Breathing (Respiração Quadrada — Navy SEALs)"),
             ("grounding_54321", "⚓ Ancoragem Tátil 5-4-3-2-1"),
-            ("perspective_reset", "🧠 Reset de Perspectiva Pré-Reunião")
+            ("perspective_reset", "🧠 Reset de Perspectiva")
         ], format_func=lambda x: x[1])
+        r_data = get_decompression_routine(tech[0])
 
-        routine_data = get_decompression_routine(t_choice[0])
         st.markdown(f"""
-        <div class="glass-card">
-            <h4>{routine_data['name']}</h4>
-            <p><span class="metric-badge badge-info">Duração: {routine_data['duration']}</span></p>
-            <ol>
-                {"".join(f"<li>{s}</li>" for s in routine_data['steps'])}
+        <div class="ide-card">
+            <h4>{r_data['name']}</h4>
+            <p><small style="color:#60a5fa;">{r_data['duration']}</small></p>
+            <ol style="margin-left: 18px; line-height: 1.7;">
+                {"".join(f"<li>{s}</li>" for s in r_data['steps'])}
             </ol>
         </div>
         """, unsafe_allow_html=True)
 
-# 5. TAB: Dashboard & Métricas + Token Optimizer
-with tab_analytics:
-    st.header("📈 Dashboard de Evolução, Métricas & Otimização de Tokens")
+    with col2:
+        st.markdown("#### 🎧 Sons Ambientes")
+        s_opt = st.selectbox("Som de fundo:", ["Chuva Suave", "Ondas do Oceano", "Lareira"])
+        urls = {
+            "Chuva Suave": "https://assets.mixkit.co/active_storage/sfx/1253/1253-preview.mp3",
+            "Ondas do Oceano": "https://assets.mixkit.co/active_storage/sfx/1189/1189-preview.mp3",
+            "Lareira": "https://assets.mixkit.co/active_storage/sfx/1243/1243-preview.mp3"
+        }
+        st.audio(urls[s_opt], format="audio/mp3")
+
+# ─── VIEW 5: DASHBOARD & MÉTRICAS ───────────────────────────
+elif st.session_state.active_mode == "Dashboard & Métricas":
+    st.markdown("### 📈 **Dashboard & Otimização de Tokens**")
     stats = get_mood_stats()
-    token_metrics = st.session_state.agent.get_token_metrics()
+    token_m = st.session_state.agent.get_token_metrics()
 
-    mcol1, mcol2, mcol3, mcol4 = st.columns(4)
-    mcol1.metric("Média de Humor", f"{stats['avg_score']}/10", delta="Estável")
-    mcol2.metric("Total de Registros", f"{stats['total_logs']}")
-    mcol3.metric("Tokens Economizados", f"{token_metrics['tokens_saved']:,}", delta="Zero-Token Routing")
-    mcol4.metric("Economia Estimada ($)", f"${token_metrics['estimated_cost_saved_usd']:.4f}")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Média de Humor", f"{stats['avg_score']}/10")
+    c2.metric("Sessões Registradas", f"{stats['total_logs']}")
+    c3.metric("Tokens Poupados", f"{token_m['tokens_saved']:,}")
+    c4.metric("Economia Est. ($)", f"${token_m['estimated_cost_saved_usd']:.4f}")
 
-    st.divider()
-
-    st.subheader("⚡ Arquitetura de Economia de Tokens & Nuvem AWS")
-    tcol1, tcol2 = st.columns(2)
-    with tcol1:
-        st.markdown("""
-        <div class="glass-card">
-            <h4>🛡️ Roteamento Inteligente Zero-Tokens</h4>
-            <p style="color:#94a3b8; font-size:0.9rem;">
-                Guardrails de segurança, exercícios somáticos e diagnósticos determinísticos rodam <strong>100% localmente</strong> sem chamar a API de LLM. Isso poupa créditos AWS e reduz latência a quase zero.
-            </p>
-            <span class="metric-badge badge-success">Prompt Caching: Ativo (-90% custo input)</span>
-            <span class="metric-badge badge-info">Janela Deslizante: 6 turnos (Sem overhead O(N²))</span>
-        </div>
-        """, unsafe_allow_html=True)
-    with tcol2:
-        st.markdown("""
-        <div class="glass-card">
-            <h4>📊 Resumo de Consumo de Tokens</h4>
-            <p style="color:#94a3b8; font-size:0.9rem;">
-                Acompanhamento em tempo real da sessão ativa do usuário:
-            </p>
-            <p><strong>Tokens LLM Consumidos:</strong> <code>{}</code> tokens</p>
-            <p><strong>Tokens Poupados por Roteamento Local:</strong> <code>{}</code> tokens</p>
-        </div>
-        """.format(token_metrics['tokens_used'], token_metrics['tokens_saved']), unsafe_allow_html=True)
-
-    st.divider()
-
-    st.subheader("📊 Frequência de Sentimentos Registrados")
-    if stats["emotion_counts"]:
-        df_emotions = pd.DataFrame(list(stats["emotion_counts"].items()), columns=["Sentimento", "Contagem"]).set_index("Sentimento")
-        st.bar_chart(df_emotions)
-    else:
-        st.info("Registre seus sentimentos na barra lateral para visualizar os gráficos interativos.")
-
-    st.subheader("🗓️ Histórico Recente de Registros")
-    recent_history = get_mood_history(limit=8)
-    if recent_history:
-        for r in recent_history:
-            tags = ", ".join(r["emotion_tags"]) if r["emotion_tags"] else "Nenhum"
-            st.markdown(f"""
-            <div class="glass-card">
-                <strong>Nota: {r['mood_score']}/10</strong> — <small>{r['timestamp']}</small><br/>
-                <span class="metric-badge badge-info">{tags}</span><br/>
-                <small><strong>Contexto:</strong> {r['context_trigger'] or 'Sem notas adicionais'}</small>
-            </div>
-            """, unsafe_allow_html=True)
+    st.markdown("---")
+    st.markdown("#### 📝 Registrar Humor Rápido")
+    score_in = st.slider("Nota de Humor (1-10):", 1, 10, 7)
+    tag_in = st.multiselect("Sentimentos:", ["Focado", "Confiante", "Tranquilo", "Ansioso", "Sobrecarregado", "Cansado"])
+    trig_in = st.text_input("Gatilho ou contexto:")
+    if st.button("Salvar no Diário", use_container_width=True):
+        record_mood_entry(score_in, tag_in, trig_in, "")
+        st.success("Salvo com sucesso!")
