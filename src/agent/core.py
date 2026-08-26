@@ -1,4 +1,4 @@
-import os
+﻿import os
 import json
 import re
 import time
@@ -27,22 +27,56 @@ try:
 except ImportError:
     HAS_BOTO3 = False
 
+LANGUAGE_PROFILES = {
+    "pt": {
+        "name": "Português (Brasil)",
+        "instruction": "Você DEVE responder e formular todas as suas reflexões e orientações rigorosamente em PORTUGUÊS (Brasil)."
+    },
+    "en": {
+        "name": "English (US)",
+        "instruction": "You MUST communicate, analyze, and formulate your entire response strictly in ENGLISH (US)."
+    },
+    "es": {
+        "name": "Español",
+        "instruction": "DEBES comunicarte, analizar y formular toda tu respuesta estrictamente en ESPAÑOL."
+    },
+    "fr": {
+        "name": "Français",
+        "instruction": "Vous DEVEZ communiquer, analyser et formuler l'intégralité de votre réponse strictement en FRANÇAIS."
+    },
+    "zh": {
+        "name": "中文 (Chinese)",
+        "instruction": "你必须完全使用中文（简体）进行所有的心理分析、对话与指导。"
+    },
+    "hi": {
+        "name": "हिन्दी (Hindi)",
+        "instruction": "आपको अपने सभी उत्तर और मनोवैज्ञानिक मार्गदर्शन पूरी तरह से हिन्दी (Hindi) में ही देने होंगे।"
+    },
+    "ar": {
+        "name": "العربية (Arabic)",
+        "instruction": "يجب عليك صياغة جميع الردود والتحليلات النفسية والتوجيهات السلوكية باللغة العربية الفصحى حصريًا."
+    },
+    "bn": {
+        "name": "বাংলা (Bengali)",
+        "instruction": "আপনাকে অবশ্যই সমস্ত আচরণগত বিশ্লেষণ এবং পরামর্শ সম্পূর্ণ বাংলায় প্রদান করতে হবে।"
+    }
+}
+
 
 class AncoraAgent:
     """
     Ancora AI Core Engine — Enhanced Multi-Model Behavioral Copilot.
     Features:
     - Model selection (Gemini 3.6/3.7, Claude 3.5 Sonnet, Offline)
+    - Multilingual & Auto-locale integration across 8 major languages
     - 5-second deliberate pause on extreme crisis risk
     - Out-of-scope redirection back to emotional & social domain
-    - Multilingual & Auto-locale support (PT/EN)
     - Real-time Observable Thought Process
     """
 
     def __init__(self, model_id: Optional[str] = None, api_key: Optional[str] = None, lang: str = "pt"):
-        self.model_id = model_id or os.getenv("ACTIVE_MODEL_ID", "gemini-3.6-flash")
+        self.model_id = model_id or os.getenv("ACTIVE_MODEL_ID", "gemini-3.7-flash")
         self.lang = lang
-        self.full_system_prompt = ANCORA_IDENTITY_SHIELD + "\n\n" + ANCORA_SYSTEM_PROMPT
         self.history: List[Dict[str, str]] = []
         self.optimizer = TokenOptimizer(max_history_turns=6, max_output_tokens=1000)
         self.gemini_key = api_key or os.getenv("GEMINI_API_KEY")
@@ -60,19 +94,42 @@ class AncoraAgent:
             except Exception as e:
                 print(f"Warning: Bedrock client unavailable: {e}")
 
+    def _get_system_prompt_for_lang(self, lang: str = "pt") -> str:
+        """Injects explicit language enforcement into the core identity shield."""
+        lang_info = LANGUAGE_PROFILES.get(lang, LANGUAGE_PROFILES["pt"])
+        lang_directive = f"""
+════════════════════════════════════════════════════════
+CRITICAL LANGUAGE DIRECTIVE / REGRA OBRIGATÓRIA DE IDIOMA:
+Target Language: {lang_info['name']} ({lang})
+{lang_info['instruction']}
+Never reply in any other language unless the user explicitly commands a switch.
+════════════════════════════════════════════════════════
+"""
+        return ANCORA_IDENTITY_SHIELD + "\n\n" + lang_directive + "\n\n" + ANCORA_SYSTEM_PROMPT
+
     def respond(self, user_message: str, model_override: Optional[str] = None, lang_override: Optional[str] = None) -> Dict[str, Any]:
         """
-        Processes a user message and returns structured reasoning + answer.
+        Processes a user message and returns structured reasoning + answer in the target language.
         """
         clean_msg = str(user_message or "").strip()
         lang = lang_override or self.lang
         active_model = model_override or self.model_id
+        system_prompt = self._get_system_prompt_for_lang(lang)
 
         if not clean_msg:
-            empty_msg = "Estou aqui. Quando quiser desabafar, planejar uma conversa difícil ou acalmar a mente, é só escrever." if lang == "pt" else "I'm here. Whenever you'd like to vent, plan a tough conversation, or reset your focus, feel free to write."
+            empty_messages = {
+                "pt": "Estou aqui. Quando quiser desabafar, planejar uma conversa difícil ou acalmar a mente, é só escrever.",
+                "en": "I'm here. Whenever you'd like to vent, plan a tough conversation, or reset your focus, feel free to write.",
+                "es": "Estoy aquí. Cuando quieras desahogarte o planificar una conversación difícil, escribe con tranquilidad.",
+                "fr": "Je suis là. Dès que vous souhaitez vous exprimer ou préparer une conversation difficile, écrivez simplement.",
+                "zh": "我在这里。随时可以向我倾诉、梳理难题或平复思绪。",
+                "hi": "मैं यहीं हूँ। जब भी आप बात करना चाहें या मन शांत करना चाहें, यहाँ लिखें।",
+                "ar": "أنا هنا. عندما تود التعبير عما في داخلك أو التخطيط لموقف صعب، تفضل بالكتابة.",
+                "bn": "আমি এখানে আছি। আপনি যখনই কথা বলতে চান বা মানসিক চাপ কমাতে চান, নির্দ্বিধায় লিখুন।"
+            }
             return {
                 "thought": "Mensagem vazia recebida.",
-                "content": empty_msg,
+                "content": empty_messages.get(lang, empty_messages["pt"]),
                 "source": "guardrail"
             }
 
@@ -80,7 +137,6 @@ class AncoraAgent:
         crisis = check_crisis_risk(clean_msg, lang=lang)
         if crisis:
             self.optimizer.record_local_routing_saving(clean_msg)
-            # Deliberate 5-second pause to reflect and feel human & thoughtful
             time.sleep(5)
             return {
                 "thought": "⚠️ SINAL DE RISCO IDENTIFICADO: Pausa intencional de 5s para avaliação de gravidade e encaminhamento seguro.",
@@ -103,16 +159,16 @@ class AncoraAgent:
         if out_of_scope:
             self.optimizer.record_local_routing_saving(clean_msg)
             return {
-                "thought": "📌 ASSUNTO FORA DO ESCOPO: O usuário perguntou sobre tarefas/código/triviais. Redirecionando para o foco de bem-estar, carreira e relações.",
+                "thought": "📌 ASSUNTO FORA DO ESCOPO: Redirecionando para o foco de bem-estar, carreira e relações.",
                 "content": out_of_scope["message"],
                 "source": "guardrail_scope"
             }
 
         # ─── 4. MODEL SELECTION EXECUTION ────────────────────────────────────
 
-        # A) Explicit Gemini Models
+        # A) Gemini Live (Flash 3.7 / Pro 3.1 / Flash 3.6)
         if "gemini" in active_model.lower() and self.gemini_key:
-            gemini_res = self._invoke_gemini_live(clean_msg, model_name=active_model)
+            gemini_res = self._invoke_gemini_live(clean_msg, model_name=active_model, lang=lang)
             if gemini_res:
                 self._append_to_history(clean_msg, gemini_res["content"])
                 return gemini_res
@@ -121,7 +177,7 @@ class AncoraAgent:
         if ("claude" in active_model.lower() or "bedrock" in active_model.lower()) and self.bedrock_client:
             try:
                 payload, est_tokens = self.optimizer.prepare_bedrock_payload(
-                    system_prompt=self.full_system_prompt,
+                    system_prompt=system_prompt,
                     history=self.history,
                     current_message=clean_msg,
                     enable_prompt_caching=True
@@ -134,16 +190,16 @@ class AncoraAgent:
 
                 self._append_to_history(clean_msg, llm_output)
                 return {
-                    "thought": "Raciocínio processado via Amazon Bedrock (Claude 3.5 Sonnet). Metodologia TCC/ACT aplicada.",
+                    "thought": f"Raciocínio processado via Amazon Bedrock (Claude 3.5 Sonnet) no idioma '{lang}'.",
                     "content": llm_output,
                     "source": "bedrock"
                 }
             except Exception as e:
                 print(f"Bedrock invocation error: {e}")
 
-        # C) Default Gemini Fallback if available (and not in offline mode)
+        # C) Default Gemini Fallback if available
         if active_model != "offline" and self.gemini_key:
-            gemini_res = self._invoke_gemini_live(clean_msg, model_name="gemini-3.6-flash")
+            gemini_res = self._invoke_gemini_live(clean_msg, model_name="gemini-3.7-flash", lang=lang)
             if gemini_res:
                 self._append_to_history(clean_msg, gemini_res["content"])
                 return gemini_res
@@ -167,14 +223,14 @@ class AncoraAgent:
         words = [w for w in clean.replace("?", "").replace("!", "").replace(",", "").split() if len(w) > 3]
         if not words:
             return clean[:20].capitalize()
-        # Simple extraction of first 3 meaningful words
         title = " ".join(words[:3]).capitalize()
         return f"{title}..."
 
-    def _invoke_gemini_live(self, user_text: str, model_name: str = "gemini-3.6-flash") -> Optional[Dict[str, Any]]:
-        """Invokes Gemini Live API with model fallback and conversation context."""
-        target_model = model_name if "gemini" in model_name else "gemini-3.6-flash"
-        models_to_try = [target_model, "gemini-3.1-pro", "gemini-3.6-flash", "gemini-3.7-flash", "gemini-flash-latest"]
+    def _invoke_gemini_live(self, user_text: str, model_name: str = "gemini-3.7-flash", lang: str = "pt") -> Optional[Dict[str, Any]]:
+        """Invokes Gemini Live API with enforced language instruction and history context."""
+        target_model = model_name if "gemini" in model_name else "gemini-3.7-flash"
+        models_to_try = [target_model, "gemini-3.7-flash", "gemini-3.1-pro", "gemini-3.6-flash", "gemini-flash-latest"]
+        system_prompt = self._get_system_prompt_for_lang(lang)
         
         contents = []
         for h in self.history[-6:]:
@@ -184,7 +240,7 @@ class AncoraAgent:
 
         payload = {
             "system_instruction": {
-                "parts": [{"text": self.full_system_prompt}]
+                "parts": [{"text": system_prompt}]
             },
             "contents": contents,
             "generationConfig": {
@@ -203,7 +259,7 @@ class AncoraAgent:
                     if candidates:
                         text_resp = candidates[0]["content"]["parts"][0]["text"]
                         return {
-                            "thought": f"Análise gerada em tempo real via {m}. Separando fatos de inferências e aplicando defusão cognitiva (ACT).",
+                            "thought": f"Análise comportamental via {m} no idioma [{LANGUAGE_PROFILES.get(lang, {}).get('name', lang)}]. Fatos separados de interpretações com TCC/ACT.",
                             "content": text_resp,
                             "source": "gemini_live"
                         }
@@ -212,34 +268,93 @@ class AncoraAgent:
         return None
 
     def _generate_procedural_response(self, text: str, lang: str = "pt") -> Tuple[str, str]:
-        """Offline dynamic psychological analysis engine."""
-        lower = text.lower()
-        words = [w for w in re.findall(r"\w+", lower) if len(w) > 3]
-
-        thought = f"Modo Offline: Mapeando termos ({len(words)} palavras). Separando fatos de leituras mentais."
-
-        if lang == "en":
-            content = (
-                "Let's break down this situation clearly:\n\n"
-                "**1. What is FACT vs. What is INTERPRETATION:**\n"
-                f"- **Observable Fact:** You shared: '{text[:80]}...'\n"
-                "- **Interpretation:** The assumption of catastrophe or rejection.\n\n"
-                "**2. Psychological Mechanism:**\n"
-                "Under pressure, our mind treats feelings as conclusive proof (*Emotional Reasoning*). The most effective step is focusing on what is within your direct control right now.\n\n"
-                "What is the smallest concrete action you can take in the next 20 minutes?"
+        """Offline dynamic psychological analysis engine supporting all 8 languages."""
+        snippet = text[:80] + "..." if len(text) > 80 else text
+        
+        responses = {
+            "pt": (
+                "Modo Offline: Mapeando cognição. Separando fatos de leituras mentais (TCC/ACT).",
+                f"Vamos dissecar essa situação com clareza para não agir com base na ansiedade:\n\n"
+                f"**1. O que é FATO vs. O que é LEITURA:**\n"
+                f"- **Fato concreto:** Você relatou: '{snippet}'\n"
+                f"- **Leitura mental:** A conclusão de desastre, rejeição ou insuficiência.\n\n"
+                f"**2. Mecanismo em jogo:**\n"
+                f"Sob estresse, nosso cérebro confunde o sentimento com prova da realidade (*Raciocínio Emocional*).\n\n"
+                f"O que dessa situação está 100% no seu controle fazer agora?"
+            ),
+            "en": (
+                "Offline Mode: Cognitive mapping active. Separating facts from assumptions (CBT/ACT).",
+                f"Let's break down this situation clearly to avoid reacting from pure anxiety:\n\n"
+                f"**1. FACT vs. INTERPRETATION:**\n"
+                f"- **Observable Fact:** You shared: '{snippet}'\n"
+                f"- **Mental Projection:** The assumption of catastrophe, rejection, or inadequacy.\n\n"
+                f"**2. Psychological Mechanism:**\n"
+                f"Under stress, the mind treats emotions as evidence (*Emotional Reasoning*).\n\n"
+                f"What part of this situation is 100% within your direct control right now?"
+            ),
+            "es": (
+                "Modo Offline: Mapeo cognitivo activo. Separando hechos de interpretaciones (TCC/ACT).",
+                f"Analicemos esta situación con total claridad para no actuar desde la ansiedad:\n\n"
+                f"**1. HECHO vs. INTERPRETACIÓN:**\n"
+                f"- **Hecho observable:** Has compartido: '{snippet}'\n"
+                f"- **Lectura mental:** La conclusión de rechazo, catástrofe o insuficiencia.\n\n"
+                f"**2. Mecanismo psicológico:**\n"
+                f"Bajo estrés, el cerebro confunde las emociones con hechos (*Razonamiento Emocional*).\n\n"
+                f"¿Qué parte de esta situación está 100% bajo tu control en este momento?"
+            ),
+            "fr": (
+                "Mode Hors-Ligne: Cartographie cognitive active. Séparation des faits et des interprétations (TCC/ACT).",
+                f"Analysons cette situation avec lucidité pour éviter de réagir sous le coup de l'anxiété:\n\n"
+                f"**1. FAITS vs. INTERPRÉTATION:**\n"
+                f"- **Fait observable:** Vous avez exprimé: '{snippet}'\n"
+                f"- **Projection mentale:** L'hypothèse de catastrophe ou de rejet.\n\n"
+                f"**2. Mécanisme en jeu:**\n"
+                f"Sous stress, notre esprit prend ses émotions pour des preuves réelles (*Raisonnement Émotionnel*).\n\n"
+                f"Que pouvez-vous contrôler à 100% dès maintenant?"
+            ),
+            "zh": (
+                "离线模式：正在进行认知重构，区分事实与主观臆断（CBT/ACT）。",
+                f"让我们清晰客观地梳理当前情况，避免受焦虑驱使：\n\n"
+                f"**1. 客观事实 vs. 主观解读：**\n"
+                f"- **事实记录：** 您提到：'{snippet}'\n"
+                f"- **思维投射：** 对灾难化后果、排斥或不足的假设。\n\n"
+                f"**2. 心理机制：**\n"
+                f"在压力下，大脑常将感受误当成事实（*情绪化推理*）。\n\n"
+                f"面对此情况，此时此刻完全在您掌控范围内的一件具体行动是什么？"
+            ),
+            "hi": (
+                "ऑफ़लाइन मोड: संज्ञानात्मक मानचित्रण सक्रिय। तथ्यों और व्याख्याओं को अलग करना।",
+                f"आइए इस स्थिति को स्पष्ट रूप से समझें ताकि चिंता के आधार पर निर्णय न लें:\n\n"
+                f"**1. तथ्य बनाम व्याख्या:**\n"
+                f"- **प्रत्यक्ष तथ्य:** आपने बताया: '{snippet}'\n"
+                f"- **मानसिक अनुमान:** असफलता या अस्वीकृति का डर।\n\n"
+                f"**2. मनोवैज्ञानिक तंत्र:**\n"
+                f"तनाव में मन भावनाओं को ही वास्तविकता मान लेता है (*इमोशनल रीजनिंग*)।\n\n"
+                f"इस स्थिति में अभी आपके सीधे नियंत्रण में क्या है?"
+            ),
+            "ar": (
+                "الوضع المحلي: جاري الفصل بين الحقائق والاستنتاجات الذهنية (CBT/ACT).",
+                f"دعنا نحلل هذا الموقف بوضوح تام لتجنب التصرف بدافع القلق:\n\n"
+                f"**1. الحقيقة مقابل التفسير:**\n"
+                f"- **الواقع الملاحظ:** ذكرت: '{snippet}'\n"
+                f"- **القراءة الذهنية:** افتراض الرفض أو الكارثة.\n\n"
+                f"**2. الآلية النفسية:**\n"
+                f"تحت وطأة الضغط، يعتبر العقل المشاعر دليلاً قاطعًا (*التفكير العاطفي*).\n\n"
+                f"ما الذي يقع بالكامل تحت سيطرتك المباشرة الآن؟"
+            ),
+            "bn": (
+                "অফলাইন মোড: জ্ঞানীয় পুনর্বিন্যাস সক্রিয়। বাস্তব তথ্য ও অনুমানের পার্থক্য (CBT/ACT)।",
+                f"উদ্বেগের বশবর্তী না হয়ে পরিস্থিতিটি স্বচ্ছভাবে বিচার করা যাক:\n\n"
+                f"**১. বাস্তব তথ্য বনাম অনুমান:**\n"
+                f"- **পর্যবেক্ষণযোগ্য তথ্য:** আপনি জানিয়েছেন: '{snippet}'\n"
+                f"- **মানসিক ব্যাখ্যা:** প্রত্যাখ্যান বা বিপর্যয়ের ভয়।\n\n"
+                f"**২. মনস্তাত্ত্বিক কারণ:**\n"
+                f"মানসিক চাপে মস্তিষ্ক অনুভূতিকেই সত্য বলে ধরে নেয় (*আবেগীয় যুক্তি*)।\n\n"
+                f"এই পরিস্থিতিতে এখন আপনার সম্পূর্ণ নিয়ন্ত্রণে কী রয়েছে?"
             )
-        else:
-            content = (
-                "Vamos dissecar essa situação com clareza para não agir com base na ansiedade:\n\n"
-                "**1. O que é FATO vs. O que é LEITURA:**\n"
-                f"- **Fato concreto:** Você relatou: '{text[:80]}...'\n"
-                "- **Leitura mental:** A conclusão de desastre, desinteresse ou insuficiência.\n\n"
-                "**2. Mecanismo em jogo:**\n"
-                "Sob estresse, nosso cérebro confunde o sentimento com prova da realidade (*Raciocínio Emocional*).\n\n"
-                "O que dessa situação está 100% no seu controle fazer agora?"
-            )
+        }
 
-        return thought, content
+        return responses.get(lang, responses["pt"])
 
     def _append_to_history(self, user_msg: str, assistant_msg: str):
         self.history.append({"role": "user", "content": str(user_msg)})

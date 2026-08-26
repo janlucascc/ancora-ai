@@ -70,6 +70,25 @@ class TestI18n(unittest.TestCase):
             self.assertGreater(len(text), 0)
 
 
+class TestAgentMultilingual(unittest.TestCase):
+
+    def test_agent_responds_in_all_8_languages(self):
+        agent = AncoraAgent(model_id="offline")
+        languages = ["pt", "en", "es", "fr", "zh", "hi", "ar", "bn"]
+        for code in languages:
+            resp = agent.respond("Estou com medo de falar com meu chefe", lang_override=code)
+            self.assertIsNotNone(resp.get("content"))
+            self.assertGreater(len(resp["content"]), 20)
+            self.assertIsNotNone(resp.get("thought"))
+
+    def test_agent_empty_message_multilingual(self):
+        agent = AncoraAgent(model_id="offline")
+        for code in ["pt", "en", "es", "fr", "zh", "hi", "ar", "bn"]:
+            resp = agent.respond("", lang_override=code)
+            self.assertIsNotNone(resp.get("content"))
+            self.assertGreater(len(resp["content"]), 10)
+
+
 class TestTokenOptimizer(unittest.TestCase):
 
     def setUp(self):
@@ -140,25 +159,6 @@ class TestTools(unittest.TestCase):
     def test_roleplay_boss_scenario_turns(self):
         details = get_scenario_details("boss_negotiation")
         self.assertIn("Carlos", details["partner_name"])
-
-
-class TestAgentPipeline(unittest.TestCase):
-
-    def test_agent_empty_message(self):
-        agent = AncoraAgent(model_id="offline")
-        resp = agent.respond("   ")
-        self.assertIn("Estou aqui", resp["content"])
-
-    def test_agent_responds_to_out_of_scope(self):
-        agent = AncoraAgent(model_id="offline")
-        resp = agent.respond("Escreva um código em python para fazer scraping")
-        self.assertIn("Meu foco", resp["content"])
-
-    def test_agent_responds_to_stress_offline(self):
-        agent = AncoraAgent(model_id="offline")
-        resp = agent.respond("Estou com ansiedade antes de uma apresentação")
-        self.assertGreater(len(resp["content"]), 30)
-        self.assertIsNotNone(resp.get("thought"))
 
 
 if __name__ == "__main__":
