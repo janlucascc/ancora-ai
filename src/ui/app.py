@@ -28,7 +28,7 @@ from src.database.db import (
 from src.ui.i18n import get_system_language, get_text, SUPPORTED_LANGUAGES
 
 # ══════════════════════════════════════════════════════════════
-# PERSISTENT SETTINGS (Default strictly to PT and Dark)
+# PERSISTENT SETTINGS (Default: PT & Dark)
 # ══════════════════════════════════════════════════════════════
 if "lang" not in st.session_state:
     stored_lang = get_preference("language", "pt")
@@ -51,24 +51,27 @@ st.set_page_config(
 )
 
 # ══════════════════════════════════════════════════════════════
-# PRECISION THEME ENGINE (Dark & Clean Light Mode)
+# HIGH-PRECISION THEME ENGINE (PURE WHITE LIGHT & ANTIGRAVITY DARK)
 # ══════════════════════════════════════════════════════════════
 if theme == "light":
     css_vars = """
-        --bg-main: #f8fafc;
-        --bg-sidebar: #f1f5f9;
+        --bg-main: #ffffff;
+        --bg-sidebar: #f8fafc;
         --bg-card: #ffffff;
-        --bg-user: #e2e8f0;
+        --bg-user: #f1f5f9;
         --text-primary: #0f172a;
-        --text-secondary: #475569;
+        --text-secondary: #334155;
         --text-muted: #64748b;
-        --border-ui: #cbd5e1;
+        --border-ui: #e2e8f0;
         --accent-blue: #2563eb;
         --accent-cyan: #0284c7;
-        --thought-bg: #f1f5f9;
+        --thought-bg: #f8fafc;
         --thought-text: #334155;
-        --shimmer-bg: linear-gradient(90deg, #e2e8f0 0%, #bae6fd 50%, #e2e8f0 100%);
+        --shimmer-bg: linear-gradient(90deg, #f1f5f9 0%, #e0f2fe 50%, #f1f5f9 100%);
         --input-bg: #ffffff;
+        --nav-hover: #f1f5f9;
+        --nav-active-bg: #e0f2fe;
+        --nav-active-border: #38bdf8;
     """
 else:
     css_vars = """
@@ -86,6 +89,9 @@ else:
         --thought-text: #94a3b8;
         --shimmer-bg: linear-gradient(90deg, rgba(30, 41, 59, 0.4) 0%, rgba(56, 189, 248, 0.1) 50%, rgba(30, 41, 59, 0.4) 100%);
         --input-bg: #14151a;
+        --nav-hover: #1f212a;
+        --nav-active-bg: rgba(56, 189, 248, 0.12);
+        --nav-active-border: #38bdf8;
     """
 
 st.markdown(f"""
@@ -96,10 +102,22 @@ st.markdown(f"""
         {css_vars}
     }}
 
-    .stApp {{
+    /* Full Streamlit Root Hierarchy Theme Override */
+    .stApp,
+    [data-testid="stAppViewContainer"],
+    [data-testid="stMain"],
+    [data-testid="stHeader"] {{
         background-color: var(--bg-main) !important;
         font-family: 'Plus Jakarta Sans', sans-serif !important;
         color: var(--text-primary) !important;
+    }}
+
+    [data-testid="stSidebar"],
+    [data-testid="stSidebar"] > div:first-child,
+    [data-testid="stSidebarContent"],
+    [data-testid="stSidebarUserContent"] {{
+        background-color: var(--bg-sidebar) !important;
+        border-right: 1px solid var(--border-ui) !important;
     }}
 
     .block-container {{
@@ -108,24 +126,45 @@ st.markdown(f"""
         max-width: 940px !important;
     }}
 
-    section[data-testid="stSidebar"] {{
-        background-color: var(--bg-sidebar) !important;
-        border-right: 1px solid var(--border-ui) !important;
+    /* Modern Navigation Button Cards */
+    .nav-card-btn {{
+        width: 100%;
+        text-align: left;
+        padding: 10px 14px;
+        margin-bottom: 6px;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.15s ease-in-out;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
     }}
-    section[data-testid="stSidebar"] * {{
+    .nav-card-btn:hover {{
+        background-color: var(--nav-hover);
         color: var(--text-primary);
+    }}
+    .nav-card-btn.active {{
+        background-color: var(--nav-active-bg);
+        border: 1px solid var(--nav-active-border);
+        color: var(--accent-cyan);
+        font-weight: 600;
     }}
 
     .user-bubble {{
         background-color: var(--bg-user);
         border: 1px solid var(--border-ui);
         border-radius: 12px;
-        padding: 13px 18px;
+        padding: 14px 18px;
         color: var(--text-primary);
         font-size: 0.95rem;
         line-height: 1.5;
         margin-bottom: 14px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
     }}
 
     .assistant-body {{
@@ -152,7 +191,7 @@ st.markdown(f"""
         padding: 16px;
         margin-bottom: 12px;
         color: var(--text-primary);
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
         transition: all 0.2s ease;
     }}
     .ide-card:hover {{
@@ -237,6 +276,7 @@ st.markdown(f"""
         border: 1px solid var(--border-ui) !important;
         border-radius: 8px !important;
         font-weight: 500 !important;
+        transition: all 0.15s ease !important;
     }}
     .stButton>button:hover {{
         border-color: var(--accent-blue) !important;
@@ -287,14 +327,15 @@ if "active_mode" not in st.session_state:
 current_conv = st.session_state.conversations[st.session_state.current_conv_id]
 
 # ══════════════════════════════════════════════════════════════
-# SIDEBAR
+# SIDEBAR (Ultra-Modern Card Layout & Non-Editable Controls)
 # ══════════════════════════════════════════════════════════════
 with st.sidebar:
     st.markdown(f"### ⚓ **{get_text('sidebar_brand', lang)}** <span style='font-size:0.75rem; color:var(--text-muted);'>v2.0</span>", unsafe_allow_html=True)
     st.markdown(f"<span class='status-dot'></span><small style='color:var(--text-muted);'>{get_text('sidebar_status', lang)}</small>", unsafe_allow_html=True)
-    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
 
-    if st.button(get_text("new_chat_btn", lang), use_container_width=True):
+    # Gradient New Chat Button
+    if st.button(get_text("new_chat_btn", lang), use_container_width=True, type="primary"):
         new_id = f"conv_{uuid.uuid4().hex[:8]}"
         welcome_msg = get_text("default_welcome", lang)
         st.session_state.conversations[new_id] = {
@@ -307,22 +348,29 @@ with st.sidebar:
         save_chat_message(new_id, "assistant", welcome_msg, "Nova sessão criada.")
         st.rerun()
 
-    st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 
-    st.caption(get_text("tools_heading", lang))
-    mode_options = [
-        get_text("mode_chat", lang),
-        get_text("mode_msg_lab", lang),
-        get_text("mode_roleplay", lang),
-        get_text("mode_decompress", lang),
-        get_text("mode_dashboard", lang)
+    # Modernized Mode Navigation Cards (No ugly circles, pure clickables)
+    st.caption(f"🧭 {get_text('tools_heading', lang)}")
+    modes_def = [
+        ("mode_chat", "💬", get_text("mode_chat", lang)),
+        ("mode_msg_lab", "📱", get_text("mode_msg_lab", lang)),
+        ("mode_roleplay", "🎭", get_text("mode_roleplay", lang)),
+        ("mode_decompress", "🫁", get_text("mode_decompress", lang)),
+        ("mode_dashboard", "📈", get_text("mode_dashboard", lang))
     ]
-    selected_mode = st.radio("Modo:", mode_options, label_visibility="collapsed")
-    st.session_state.active_mode = selected_mode
+
+    for m_key, m_icon, m_label in modes_def:
+        is_active = (st.session_state.active_mode == m_label)
+        btn_label = f"▸ {m_icon} {m_label}" if is_active else f"  {m_icon} {m_label}"
+        if st.button(btn_label, key=f"nav_{m_key}", use_container_width=True):
+            st.session_state.active_mode = m_label
+            st.rerun()
 
     st.divider()
 
-    st.caption(get_text("recent_convs", lang))
+    # Recent Conversations
+    st.caption(f"📁 {get_text('recent_convs', lang)}")
     for cid, cdata in reversed(list(st.session_state.conversations.items())):
         is_active = (cid == st.session_state.current_conv_id)
         display_title = cdata['title'][:22]
@@ -334,39 +382,73 @@ with st.sidebar:
 
     st.divider()
 
-    with st.expander(get_text("settings_heading", lang)):
-        # 1. Theme Switcher
-        theme_choices = {"dark": get_text("theme_dark", lang), "light": get_text("theme_light", lang)}
-        chosen_theme = st.selectbox(get_text("theme_label", lang), ["dark", "light"], format_func=lambda t: theme_choices[t], index=0 if st.session_state.theme == "dark" else 1)
-        if chosen_theme != st.session_state.theme:
-            st.session_state.theme = chosen_theme
-            save_preference("theme", chosen_theme)
-            st.rerun()
+    # Settings Drawer (Non-Editable Pill Selectors)
+    with st.expander(f"⚙️ {get_text('settings_heading', lang)}"):
+        # 1. Non-Editable Theme Switcher Buttons (No text box, zero backspace bug)
+        st.write(f"**{get_text('theme_label', lang)}**")
+        col_t1, col_t2 = st.columns(2)
+        with col_t1:
+            if st.button("🌙 Escuro", use_container_width=True, type="primary" if theme == "dark" else "secondary"):
+                if theme != "dark":
+                    st.session_state.theme = "dark"
+                    save_preference("theme", "dark")
+                    st.rerun()
+        with col_t2:
+            if st.button("☀️ Claro", use_container_width=True, type="primary" if theme == "light" else "secondary"):
+                if theme != "light":
+                    st.session_state.theme = "light"
+                    save_preference("theme", "light")
+                    st.rerun()
 
-        # 2. Language Switcher (Defaults to PT)
-        lang_keys = list(SUPPORTED_LANGUAGES.keys())
-        chosen_lang = st.selectbox(get_text("lang_label", lang), lang_keys, format_func=lambda code: f"{SUPPORTED_LANGUAGES[code]['flag']} {SUPPORTED_LANGUAGES[code]['label']}", index=lang_keys.index(st.session_state.lang) if st.session_state.lang in lang_keys else 0)
-        if chosen_lang != st.session_state.lang:
-            st.session_state.lang = chosen_lang
-            save_preference("language", chosen_lang)
-            st.session_state.agent = AncoraAgent(model_id=st.session_state.selected_model, lang=chosen_lang)
-            st.rerun()
+        st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
 
-        # 3. Model Switcher (Defaults to Gemini 3.7 Flash)
-        model_choices = {
-            "gemini-3.7-flash": "⚡ Gemini 3.7 Flash (Padrão Rápido)",
-            "gemini-3.1-pro": "🧠 Gemini 3.1 Pro (Raciocínio)",
-            "claude-3-5-sonnet": "🏛️ Claude 3.5 Sonnet (AWS)",
-            "offline": "🛡️ Modo Offline (TCC/ACT Local)"
-        }
-        chosen_model_key = st.selectbox(get_text("model_label", lang), list(model_choices.keys()), format_func=lambda x: model_choices[x], index=list(model_choices.keys()).index(st.session_state.selected_model) if st.session_state.selected_model in model_choices else 0)
-        if chosen_model_key != st.session_state.selected_model:
-            st.session_state.selected_model = chosen_model_key
-            save_preference("selected_model", chosen_model_key)
-            st.session_state.agent = AncoraAgent(model_id=chosen_model_key, lang=lang)
-            st.toast(f"Modelo: {model_choices[chosen_model_key]}")
+        # 2. Non-Editable Language Selector Grid (Clickable Flag Pills)
+        st.write(f"**{get_text('lang_label', lang)}**")
+        c_l1, c_l2, c_l3, c_l4 = st.columns(4)
+        flags = [("pt", "🇧🇷 PT"), ("en", "🇺🇸 EN"), ("es", "🇪🇸 ES"), ("fr", "🇫🇷 FR"),
+                 ("zh", "🇨🇳 ZH"), ("hi", "🇮🇳 HI"), ("ar", "🇸🇦 AR"), ("bn", "🇧🇩 BN")]
+        
+        for idx, (code, flag_lbl) in enumerate(flags):
+            target_col = [c_l1, c_l2, c_l3, c_l4][idx % 4]
+            with target_col:
+                is_selected = (lang == code)
+                if st.button(flag_lbl, key=f"lang_btn_{code}", use_container_width=True, type="primary" if is_selected else "secondary"):
+                    if lang != code:
+                        st.session_state.lang = code
+                        save_preference("language", code)
+                        st.session_state.agent = AncoraAgent(model_id=st.session_state.selected_model, lang=code)
+                        st.rerun()
+
+        st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+
+        # 3. Model Selector Grid (Clickable Model Pills)
+        st.write(f"**{get_text('model_label', lang)}**")
+        m_c1, m_c2 = st.columns(2)
+        with m_c1:
+            if st.button("⚡ Flash 3.7", use_container_width=True, type="primary" if st.session_state.selected_model == "gemini-3.7-flash" else "secondary"):
+                st.session_state.selected_model = "gemini-3.7-flash"
+                save_preference("selected_model", "gemini-3.7-flash")
+                st.session_state.agent = AncoraAgent(model_id="gemini-3.7-flash", lang=lang)
+                st.rerun()
+            if st.button("🏛️ Claude 3.5", use_container_width=True, type="primary" if st.session_state.selected_model == "claude-3-5-sonnet" else "secondary"):
+                st.session_state.selected_model = "claude-3-5-sonnet"
+                save_preference("selected_model", "claude-3-5-sonnet")
+                st.session_state.agent = AncoraAgent(model_id="claude-3-5-sonnet", lang=lang)
+                st.rerun()
+        with m_c2:
+            if st.button("🧠 Pro 3.1", use_container_width=True, type="primary" if st.session_state.selected_model == "gemini-3.1-pro" else "secondary"):
+                st.session_state.selected_model = "gemini-3.1-pro"
+                save_preference("selected_model", "gemini-3.1-pro")
+                st.session_state.agent = AncoraAgent(model_id="gemini-3.1-pro", lang=lang)
+                st.rerun()
+            if st.button("🛡️ Offline", use_container_width=True, type="primary" if st.session_state.selected_model == "offline" else "secondary"):
+                st.session_state.selected_model = "offline"
+                save_preference("selected_model", "offline")
+                st.session_state.agent = AncoraAgent(model_id="offline", lang=lang)
+                st.rerun()
 
         st.markdown("---")
+        # 4. LGPD Compliance
         st.caption(get_text("lgpd_heading", lang))
         st.markdown(f"<small style='color:#22c55e;'>{get_text('lgpd_badge', lang)}</small>", unsafe_allow_html=True)
         user_export_data = export_user_data_lgpd()
