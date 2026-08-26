@@ -44,7 +44,6 @@ st.set_page_config(
 # COLOR PALETTE & DESIGN SYSTEM (CRISP CONTRAST & HARMONY)
 # ══════════════════════════════════════════════════════════════
 if theme == "dark":
-    # Dark Palette: High Contrast Slate/Zinc + Electric Indigo
     P = {
         "bg_main": "#0b0c10",
         "bg_sidebar": "#10121a",
@@ -61,9 +60,9 @@ if theme == "dark":
         "accent_gradient": "linear-gradient(135deg, #6366f1 0%, #4338ca 100%)",
         "accent_bg": "rgba(99, 102, 241, 0.15)",
         "accent_border": "#6366f1",
-        "btn_secondary_bg": "#1c1f2d",
-        "btn_secondary_border": "#31364d",
-        "btn_secondary_text": "#e2e8f0",
+        "btn_sec_bg": "#1c1f2d",
+        "btn_sec_border": "#31364d",
+        "btn_sec_text": "#e2e8f0",
         "success": "#22c55e",
         "success_bg": "rgba(34, 197, 94, 0.12)",
         "shadow_card": "0 2px 8px rgba(0, 0, 0, 0.35)",
@@ -71,7 +70,6 @@ if theme == "dark":
         "shimmer_bg": "linear-gradient(90deg, #161822 0%, rgba(99, 102, 241, 0.2) 50%, #161822 100%)",
     }
 else:
-    # Light Palette: Pure White + Crisp Slate + Deep Indigo Accent
     P = {
         "bg_main": "#ffffff",
         "bg_sidebar": "#f8fafc",
@@ -88,9 +86,9 @@ else:
         "accent_gradient": "linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)",
         "accent_bg": "rgba(79, 70, 229, 0.08)",
         "accent_border": "#4f46e5",
-        "btn_secondary_bg": "#f8fafc",
-        "btn_secondary_border": "#cbd5e1",
-        "btn_secondary_text": "#1e293b",
+        "btn_sec_bg": "#f8fafc",
+        "btn_sec_border": "#cbd5e1",
+        "btn_sec_text": "#1e293b",
         "success": "#16a34a",
         "success_bg": "rgba(22, 163, 74, 0.08)",
         "shadow_card": "0 1px 4px rgba(0, 0, 0, 0.05), 0 2px 10px rgba(0, 0, 0, 0.02)",
@@ -118,9 +116,9 @@ st.markdown(f"""
         --accent-gradient: {P['accent_gradient']};
         --accent-bg: {P['accent_bg']};
         --accent-border: {P['accent_border']};
-        --btn-sec-bg: {P['btn_secondary_bg']};
-        --btn-sec-border: {P['btn_secondary_border']};
-        --btn-sec-text: {P['btn_secondary_text']};
+        --btn-sec-bg: {P['btn_sec_bg']};
+        --btn-sec-border: {P['btn_sec_border']};
+        --btn-sec-text: {P['btn_sec_text']};
         --success: {P['success']};
         --success-bg: {P['success_bg']};
         --shadow-card: {P['shadow_card']};
@@ -161,7 +159,27 @@ st.markdown(f"""
         font-family: 'DM Sans', sans-serif !important;
     }}
 
-    /* ─ GENERAL BUTTON ENGINE & PERFECT CENTERING ─────── */
+    /* ─ SIDEBAR COLLAPSE / EXPAND TOGGLE BUTTONS FIX ──── */
+    header[data-testid="stHeader"] {{
+        background: transparent !important;
+    }}
+    [data-testid="stSidebarCollapsedControl"],
+    button[data-testid="stSidebarCollapseButton"],
+    [data-testid="stSidebarCollapsedControl"] button {{
+        color: var(--text-primary) !important;
+        background: var(--bg-card) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 8px !important;
+        cursor: pointer !important;
+        transition: all 0.15s ease !important;
+    }}
+    [data-testid="stSidebarCollapsedControl"] button:hover,
+    button[data-testid="stSidebarCollapseButton"]:hover {{
+        background: var(--bg-card-hover) !important;
+        border-color: var(--accent) !important;
+    }}
+
+    /* ─ BUTTON ENGINE ─────────────────────────────────── */
     .stButton {{
         width: 100% !important;
     }}
@@ -169,8 +187,6 @@ st.markdown(f"""
         width: 100% !important;
         display: flex !important;
         align-items: center !important;
-        justify-content: center !important;
-        text-align: center !important;
         border-radius: 8px !important;
         font-family: 'DM Sans', sans-serif !important;
         font-size: 0.86rem !important;
@@ -182,52 +198,53 @@ st.markdown(f"""
         text-overflow: ellipsis !important;
     }}
 
-    /* Nav Buttons (Left-Aligned in Sidebar) */
-    .sidebar-nav-btn .stButton > button,
-    .chat-history-btn .stButton > button {{
+    /* Main Area Buttons (Centered) */
+    [data-testid="stMain"] .stButton > button,
+    [data-testid="stExpander"] .stButton > button {{
+        justify-content: center !important;
+        text-align: center !important;
+    }}
+
+    /* Sidebar Nav and Chat Buttons (Left-Aligned) */
+    [data-testid="stSidebar"] .stButton > button {{
         justify-content: flex-start !important;
         text-align: left !important;
         background: transparent !important;
         color: var(--text-secondary) !important;
         border: 1px solid transparent !important;
     }}
-    .sidebar-nav-btn .stButton > button:hover,
-    .chat-history-btn .stButton > button:hover {{
+    [data-testid="stSidebar"] .stButton > button:hover {{
         background: var(--bg-card-hover) !important;
         border-color: var(--border) !important;
         color: var(--text-primary) !important;
     }}
 
-    /* Active Nav State */
-    .nav-btn-active .stButton > button {{
-        background: var(--accent-bg) !important;
-        border-color: var(--accent-border) !important;
-        color: var(--accent) !important;
-        font-weight: 600 !important;
-    }}
-
-    /* Primary Buttons (CTA / Active Pills / Submit) */
-    .stButton > button[kind="primary"] {{
+    /* Primary Buttons (New Chat / Active Pills / CTA) */
+    .stButton > button[kind="primary"],
+    [data-testid="stSidebar"] .stButton > button[kind="primary"] {{
         background: var(--accent-gradient) !important;
         color: #ffffff !important;
         border: 1px solid var(--accent) !important;
         font-weight: 600 !important;
+        justify-content: center !important;
+        text-align: center !important;
         box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25) !important;
     }}
-    .stButton > button[kind="primary"]:hover {{
+    .stButton > button[kind="primary"]:hover,
+    [data-testid="stSidebar"] .stButton > button[kind="primary"]:hover {{
         filter: brightness(1.1) !important;
         transform: translateY(-1px) !important;
         box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35) !important;
     }}
 
-    /* Secondary Buttons (Inactive Pills / Options) */
-    .stButton > button[kind="secondary"] {{
+    /* Secondary Buttons in Expander (Theme / Language / Model Pills) */
+    [data-testid="stExpander"] .stButton > button[kind="secondary"] {{
         background: var(--btn-sec-bg) !important;
         color: var(--btn-sec-text) !important;
         border: 1px solid var(--btn-sec-border) !important;
         font-weight: 500 !important;
     }}
-    .stButton > button[kind="secondary"]:hover {{
+    [data-testid="stExpander"] .stButton > button[kind="secondary"]:hover {{
         border-color: var(--accent) !important;
         color: var(--text-primary) !important;
         background: var(--bg-card-hover) !important;
@@ -411,10 +428,9 @@ st.markdown(f"""
         border-radius: 10px !important;
     }}
 
-    /* ─ HIDE UNNECESSARY CHROME ───────────────────────── */
-    header[data-testid="stHeader"], footer,
-    [data-testid="stToolbar"], [data-testid="stDecoration"],
-    [data-testid="stStatusWidget"], .stDeployButton {{
+    /* ─ HIDE ONLY UNNECESSARY TOOLBARS, PRESERVE SIDEBAR TOGGLE ─── */
+    footer, [data-testid="stToolbar"], [data-testid="stDecoration"],
+    [data-testid="stStatusWidget"], .stDeployButton, #MainMenu {{
         display: none !important;
     }}
 
@@ -485,7 +501,7 @@ with st.sidebar:
 
     st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
 
-    # Navigation Modes (Clean Left-Aligned with Active Highlight)
+    # Navigation Modes (Clean and Functional)
     st.markdown(f"<div style='font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); padding:6px 2px;'>{get_text('tools_heading', lang)}</div>", unsafe_allow_html=True)
     
     modes = [
@@ -497,13 +513,10 @@ with st.sidebar:
     ]
     for m_key, m_icon, m_label in modes:
         is_act = (st.session_state.active_mode == m_label)
-        prefix = "▸  " if is_act else "    "
-        wrapper_class = "sidebar-nav-btn nav-btn-active" if is_act else "sidebar-nav-btn"
-        st.markdown(f'<div class="{wrapper_class}">', unsafe_allow_html=True)
-        if st.button(f"{prefix}{m_icon}  {m_label}", key=f"nav_{m_key}", use_container_width=True):
+        prefix = "▸ " if is_act else "  "
+        if st.button(f"{prefix}{m_icon}  {m_label}", key=f"nav_{m_key}", use_container_width=True, type="primary" if is_act else "secondary"):
             st.session_state.active_mode = m_label
             st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
 
     st.divider()
 
@@ -511,15 +524,12 @@ with st.sidebar:
     st.markdown(f"<div style='font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); padding:4px 2px;'>{get_text('recent_convs', lang)}</div>", unsafe_allow_html=True)
     for cid, cdata in reversed(list(st.session_state.conversations.items())):
         act = (cid == st.session_state.current_conv_id)
-        prefix = "▸  " if act else "    "
+        prefix = "▸ " if act else "  "
         title_short = cdata["title"][:22]
-        wrapper_class = "chat-history-btn nav-btn-active" if act else "chat-history-btn"
-        st.markdown(f'<div class="{wrapper_class}">', unsafe_allow_html=True)
-        if st.button(f"{prefix}{title_short}", key=f"chat_{cid}", use_container_width=True):
+        if st.button(f"{prefix}{title_short}", key=f"chat_{cid}", use_container_width=True, type="primary" if act else "secondary"):
             st.session_state.current_conv_id = cid
             st.session_state.active_mode = get_text("mode_chat", lang)
             st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
 
     st.divider()
 
