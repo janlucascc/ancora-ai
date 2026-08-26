@@ -8,15 +8,16 @@ from datetime import datetime
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from src.agent.core import AncoraAgent
+from src.agent.thinking_engine import get_dynamic_thinking_steps
 from src.tools.mood_journal import record_mood_entry, get_mood_history
 from src.tools.stress_decompress import get_decompression_routine
 from src.tools.social_wingman import generate_wingman_advice
 from src.tools.message_analyzer import analyze_message_and_rewrite
 from src.tools.roleplay_arena import ROLEPLAY_SCENARIOS, get_scenario_details, generate_roleplay_turn
 from src.database.db import get_mood_stats
-from src.ui.i18n import get_system_language, get_text, TRANSLATIONS
+from src.ui.i18n import get_system_language, get_text, SUPPORTED_LANGUAGES
 
-# Auto-detect language once
+# Language State (8 Most Spoken World Languages)
 if "lang" not in st.session_state:
     st.session_state.lang = get_system_language()
 
@@ -31,7 +32,7 @@ st.set_page_config(
 )
 
 # ══════════════════════════════════════════════════════════════
-# MODERN DARK GLASSMORPHIC & ANIMATED UI CSS
+# MODERN DARK GLASSMORPHIC & SHIMMER THINKING ANIMATION CSS
 # ══════════════════════════════════════════════════════════════
 st.markdown("""
 <style>
@@ -75,6 +76,7 @@ st.markdown("""
         animation: fadeInSlide 0.25s ease-out;
     }
 
+    /* Pulsing Green Status Dot */
     .status-dot {
         display: inline-block;
         width: 7px;
@@ -88,6 +90,40 @@ st.markdown("""
     @keyframes pulseDot {
         0%, 100% { opacity: 1; transform: scale(1); }
         50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* Live Thinking Shimmer Animation */
+    .live-thinking-box {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: linear-gradient(90deg, rgba(30, 41, 59, 0.4) 0%, rgba(56, 189, 248, 0.1) 50%, rgba(30, 41, 59, 0.4) 100%);
+        background-size: 200% 100%;
+        animation: shimmerWave 2s infinite linear;
+        border-left: 3px solid #38bdf8;
+        border-radius: 6px;
+        padding: 10px 16px;
+        margin: 12px 0;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.88rem;
+        color: #38bdf8;
+    }
+    @keyframes shimmerWave {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    .thinking-spinner {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border: 2px solid rgba(56, 189, 248, 0.3);
+        border-radius: 50%;
+        border-top-color: #38bdf8;
+        animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
     }
 
     .ancora-topbar {
@@ -215,7 +251,7 @@ if "active_mode" not in st.session_state:
 current_conv = st.session_state.conversations[st.session_state.current_conv_id]
 
 # ══════════════════════════════════════════════════════════════
-# SIDEBAR
+# SIDEBAR (8 Languages & Model Workspace)
 # ══════════════════════════════════════════════════════════════
 with st.sidebar:
     st.markdown(f"### ⚓ **{get_text('sidebar_brand', lang)}** <span style='font-size:0.75rem; color:#64748b;'>v2.0</span>", unsafe_allow_html=True)
@@ -231,7 +267,7 @@ with st.sidebar:
                 {
                     "role": "assistant",
                     "thought": "Nova sessão criada.",
-                    "content": "Nova sessão iniciada. O que está acontecendo agora que você quer examinar com clareza?" if lang == "pt" else "New session started. What would you like to examine clearly today?"
+                    "content": get_text("default_welcome", lang)
                 }
             ]
         }
@@ -268,9 +304,22 @@ with st.sidebar:
 
     st.divider()
 
-    # Settings & Model Selection Drawer
+    # Settings Drawer (Language & AI Model)
     with st.expander(get_text("settings_heading", lang)):
-        # 1. Model Selector
+        # 1. 8 Most Spoken Languages in the World Selector
+        lang_keys = list(SUPPORTED_LANGUAGES.keys())
+        chosen_lang = st.selectbox(
+            get_text("lang_label", lang),
+            lang_keys,
+            format_func=lambda code: f"{SUPPORTED_LANGUAGES[code]['flag']} {SUPPORTED_LANGUAGES[code]['label']}",
+            index=lang_keys.index(st.session_state.lang) if st.session_state.lang in lang_keys else 0
+        )
+        if chosen_lang != st.session_state.lang:
+            st.session_state.lang = chosen_lang
+            st.session_state.agent = AncoraAgent(model_id=st.session_state.selected_model, lang=chosen_lang)
+            st.rerun()
+
+        # 2. Model Selector
         model_choices = {
             "gemini-3.6-flash": "⚡ Gemini 3.6 Flash (Padrão Rápido)",
             "gemini-3.7-flash": "🧠 Gemini 3.7 Flash (Raciocínio)",
@@ -286,33 +335,20 @@ with st.sidebar:
         if chosen_model_key != st.session_state.selected_model:
             st.session_state.selected_model = chosen_model_key
             st.session_state.agent = AncoraAgent(model_id=chosen_model_key, lang=lang)
-            st.toast(f"Modelo alterado para: {model_choices[chosen_model_key]}")
-
-        # 2. Language Selector
-        lang_choices = {"pt": "🇧🇷 Português (Brasil)", "en": "🇺🇸 English (US)"}
-        chosen_lang = st.selectbox(
-            get_text("lang_label", lang),
-            ["pt", "en"],
-            format_func=lambda x: lang_choices[x],
-            index=0 if lang == "pt" else 1
-        )
-        if chosen_lang != st.session_state.lang:
-            st.session_state.lang = chosen_lang
-            st.rerun()
+            st.toast(f"Modelo: {model_choices[chosen_model_key]}")
 
         # 3. Gemini API Key input
         custom_key = st.text_input("Gemini API Key:", type="password", placeholder="AQ.Ab8RN...")
-        if st.button("Salvar Chave / Save Key", use_container_width=True):
+        if st.button("Salvar Chave", use_container_width=True):
             if custom_key:
                 os.environ["GEMINI_API_KEY"] = custom_key
                 st.session_state.agent = AncoraAgent(api_key=custom_key, model_id=st.session_state.selected_model, lang=lang)
-                st.success("Chave salva com sucesso!")
+                st.success("Chave salva!")
 
 # ══════════════════════════════════════════════════════════════
 # MAIN CANVAS
 # ══════════════════════════════════════════════════════════════
 
-# Model Badge Label
 model_display_names = {
     "gemini-3.6-flash": "Gemini 3.6 Flash / Live",
     "gemini-3.7-flash": "Gemini 3.7 Flash / Deep",
@@ -328,14 +364,13 @@ st.markdown(f"""
         ⚓ {current_conv['title']} &nbsp;·&nbsp; <span style="font-weight:400; font-size:0.8rem; color:#64748b;">Modo: {st.session_state.active_mode}</span>
     </div>
     <div class="topbar-badge">
-        {active_model_badge}
+        {SUPPORTED_LANGUAGES.get(lang, {}).get('flag', '🌐')} {active_model_badge}
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 # ─── VIEW 1: CHAT LIVRE ──────────────────────────────────────
 if st.session_state.active_mode == get_text("mode_chat", lang):
-    # Render all historic messages
     for msg in current_conv["messages"]:
         if msg["role"] == "user":
             st.markdown(f"""
@@ -359,12 +394,11 @@ if st.session_state.active_mode == get_text("mode_chat", lang):
             """, unsafe_allow_html=True)
             st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
 
-    # User Input & Instant Message Display
+    # Chat Input with Dynamic Thought Animation
     if user_prompt := st.chat_input(get_text("input_placeholder", lang)):
-        # 1. Immediately append to conversation history
         current_conv["messages"].append({"role": "user", "content": user_prompt})
         
-        # 2. Render user message right away so it appears on screen immediately!
+        # Render user message right away
         st.markdown(f"""
         <div class="user-bubble">
             {user_prompt}
@@ -375,18 +409,34 @@ if st.session_state.active_mode == get_text("mode_chat", lang):
             clean_title = user_prompt.replace("⚓", "").replace("💬", "").strip()
             current_conv["title"] = clean_title[:25]
 
-        # 3. Model generation with spinner
-        with st.spinner(get_text("analyzing_spinner", lang)):
-            response_dict = st.session_state.agent.respond(
-                user_prompt,
-                model_override=st.session_state.selected_model,
-                lang_override=lang
-            )
-            current_conv["messages"].append({
-                "role": "assistant",
-                "thought": response_dict.get("thought", ""),
-                "content": response_dict.get("content", "")
-            })
+        # Live Dynamic Thinking Steps Container
+        thinking_placeholder = st.empty()
+        thought_steps = get_dynamic_thinking_steps(user_prompt, lang=lang)
+
+        # Show realistic animated cognitive reasoning states
+        for step_text in thought_steps:
+            thinking_placeholder.markdown(f"""
+            <div class="live-thinking-box">
+                <div class="thinking-spinner"></div>
+                <span>{step_text}</span>
+            </div>
+            """, unsafe_allow_html=True)
+            time.sleep(0.35)
+
+        # Invoke Agent
+        response_dict = st.session_state.agent.respond(
+            user_prompt,
+            model_override=st.session_state.selected_model,
+            lang_override=lang
+        )
+
+        thinking_placeholder.empty()
+
+        current_conv["messages"].append({
+            "role": "assistant",
+            "thought": response_dict.get("thought", ""),
+            "content": response_dict.get("content", "")
+        })
 
         st.rerun()
 
