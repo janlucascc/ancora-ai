@@ -159,25 +159,51 @@ st.markdown(f"""
         font-family: 'DM Sans', sans-serif !important;
     }}
 
-    /* ─ SIDEBAR COLLAPSE / EXPAND TOGGLE BUTTONS FIX ──── */
-    header[data-testid="stHeader"] {{
+    /* ─ SIDEBAR COLLAPSE / EXPAND BUTTONS (100% VISIBLE & ACCESSIBLE) ──── */
+    header[data-testid="stHeader"] {
         background: transparent !important;
-    }}
+        z-index: 99999 !important;
+        display: flex !important;
+        height: 3.5rem !important;
+    }
+
+    /* Target all possible Streamlit expand/collapse toggle selectors */
     [data-testid="stSidebarCollapsedControl"],
+    [data-testid="collapsedControl"],
     button[data-testid="stSidebarCollapseButton"],
-    [data-testid="stSidebarCollapsedControl"] button {{
+    [data-testid="stSidebarCollapsedControl"] button,
+    [data-testid="collapsedControl"] button,
+    header[data-testid="stHeader"] button {
+        display: inline-flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        background-color: var(--bg-card) !important;
         color: var(--text-primary) !important;
-        background: var(--bg-card) !important;
         border: 1px solid var(--border) !important;
         border-radius: 8px !important;
         cursor: pointer !important;
         transition: all 0.15s ease !important;
-    }}
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1) !important;
+        margin: 8px 12px !important;
+    }
+
     [data-testid="stSidebarCollapsedControl"] button:hover,
-    button[data-testid="stSidebarCollapseButton"]:hover {{
-        background: var(--bg-card-hover) !important;
+    [data-testid="collapsedControl"] button:hover,
+    button[data-testid="stSidebarCollapseButton"]:hover,
+    header[data-testid="stHeader"] button:hover {
+        background-color: var(--bg-card-hover) !important;
         border-color: var(--accent) !important;
-    }}
+        color: var(--accent) !important;
+    }
+
+    [data-testid="stSidebarCollapsedControl"] svg,
+    [data-testid="collapsedControl"] svg,
+    button[data-testid="stSidebarCollapseButton"] svg,
+    header[data-testid="stHeader"] svg {
+        fill: var(--text-primary) !important;
+        stroke: var(--text-primary) !important;
+        color: var(--text-primary) !important;
+    }
 
     /* ─ BUTTON ENGINE ─────────────────────────────────── */
     .stButton {{
@@ -428,11 +454,10 @@ st.markdown(f"""
         border-radius: 10px !important;
     }}
 
-    /* ─ HIDE ONLY UNNECESSARY TOOLBARS, PRESERVE SIDEBAR TOGGLE ─── */
-    footer, [data-testid="stToolbar"], [data-testid="stDecoration"],
-    [data-testid="stStatusWidget"], .stDeployButton, #MainMenu {{
+    /* ─ HIDE ONLY FOOTER & DEPLOY BUTTON ─────────────── */
+    footer, .stDeployButton, #MainMenu {
         display: none !important;
-    }}
+    }
 
     /* ─ COLUMN GAP CLEANUP ────────────────────────────── */
     [data-testid="stHorizontalBlock"] {{
