@@ -8,33 +8,35 @@ try:
 except ImportError:
     pass
 
-from src.agent.prompts import ANCORA_SYSTEM_PROMPT
-from src.agent.guardrails import check_crisis_risk
+from src.agent.prompts import ANCORA_SYSTEM_PROMPT, ANCORA_IDENTITY_SHIELD
+from src.agent.guardrails import check_crisis_risk, check_manipulation_attempt
 from src.tools.social_wingman import generate_wingman_advice
 from src.tools.message_analyzer import analyze_message_and_rewrite
-from src.tools.roleplay_arena import get_scenario_details, generate_roleplay_turn
+from src.tools.roleplay_arena import generate_roleplay_turn
 from src.tools.stress_decompress import get_decompression_routine
 from src.tools.confidence_anchor import reframe_negative_thought
 from src.tools.mood_journal import record_mood_entry, get_mood_history
 
-# Check if boto3 and Bedrock are configured
 try:
     import boto3
     HAS_BOTO3 = True
 except ImportError:
     HAS_BOTO3 = False
 
+
 class AncoraAgent:
     """
-    Ancora AI Core Agent.
-    Orchestrates LLM (Bedrock / Anthropic / Local fallback), Guardrails, and Custom Strands Tools.
+    Ancora AI Core Agent — Hardened Identity, Behavioral Psychology Framework.
+    Orchestrates LLM (Bedrock / Local fallback), Guardrails, and Custom Tools.
     """
+
     def __init__(self, model_id: Optional[str] = None):
         self.model_id = model_id or os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-3-5-sonnet-20241022-v2:0")
-        self.system_prompt = ANCORA_SYSTEM_PROMPT
+        # Combines identity shield + full methodology prompt for Bedrock calls
+        self.full_system_prompt = ANCORA_IDENTITY_SHIELD + "\n\n" + ANCORA_SYSTEM_PROMPT
         self.history: List[Dict[str, str]] = []
         self.bedrock_client = None
-        
+
         if HAS_BOTO3 and os.getenv("AWS_ACCESS_KEY_ID") and os.getenv("AWS_SECRET_ACCESS_KEY"):
             try:
                 self.bedrock_client = boto3.client(
@@ -44,70 +46,127 @@ class AncoraAgent:
                     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY")
                 )
             except Exception as e:
-                print(f"Warning: Could not initialize Bedrock client: {e}")
+                print(f"Warning: Bedrock client unavailable: {e}")
 
     def respond(self, user_message: str) -> str:
-        """Processes user message through guardrails, tool dispatching, and agent reasoning."""
-        # 1. Immediate Safety Crisis Guardrail
+        """
+        Processes a user message through the full Ancora AI pipeline:
+        1. Crisis Guardrail (highest priority)
+        2. Manipulation / Jailbreak Detection
+        3. Contextual Tool Routing
+        4. AWS Bedrock LLM (if configured)
+        5. Principled Local Fallback
+        """
+
+        # ─── 1. SAFETY CRISIS — ABSOLUTE PRIORITY ─────────────────────────────
         crisis = check_crisis_risk(user_message)
         if crisis:
             return crisis["message"]
 
+        # ─── 2. MANIPULATION / JAILBREAK DETECTION ───────────────────────────
+        manipulation = check_manipulation_attempt(user_message)
+        if manipulation:
+            return manipulation["message"]
+
         msg_lower = user_message.lower()
 
-        # 2. Contextual Routing to Specialized Tools
-        if any(w in msg_lower for w in ["suspiro", "huberman"]):
+        # ─── 3. CONTEXTUAL TOOL ROUTING ──────────────────────────────────────
+
+        # 3a. Somatic Grounding — Physiological Sigh (Huberman)
+        if any(w in msg_lower for w in ["suspiro", "huberman", "nervovago", "nervo vago"]):
             routine = get_decompression_routine("physiological_sigh")
-            steps_formatted = "\n".join(routine["steps"])
-            return f"Vamos usar a técnica de alívio mais rápida da neurociência:\n\n### {routine['name']}\n**Tempo sugerido:** {routine['duration']}\n\n{steps_formatted}\n\nFaça esse ciclo 3 vezes e sinta seus batimentos normalizarem."
+            steps = "\n".join(routine["steps"])
+            return (
+                f"Vamos usar o método mais rápido que a neurociência tem pra isso.\n\n"
+                f"### {routine['name']}\n"
+                f"**Tempo:** {routine['duration']}\n\n"
+                f"{steps}\n\n"
+                f"Faça esses ciclos agora. Quando o ritmo respiratório normalizar, me conta como você está."
+            )
 
-        if any(w in msg_lower for w in ["respira", "ansiedade", "pânico", "panico", "estresse", "desacelerar", "calma", "grounding"]):
-            routine = get_decompression_routine("box_breathing" if "respira" in msg_lower else "grounding_54321")
-            steps_formatted = "\n".join(routine["steps"])
-            return f"Respira fundo, estou aqui contigo. Vamos fazer um reset rápido agora:\n\n### {routine['name']}\n**Tempo sugerido:** {routine['duration']}\n\n{steps_formatted}\n\nQuando terminar essas repetições, me conta como seu corpo está se sentindo."
+        # 3b. Somatic Grounding — Box Breathing / 5-4-3-2-1
+        if any(w in msg_lower for w in ["respira", "respiração", "ansiedade", "pânico", "panico",
+                                         "grounding", "acalmar", "calma", "coração acelerado"]):
+            technique = "box_breathing" if any(k in msg_lower for k in ["respira", "respiração", "box"]) else "grounding_54321"
+            routine = get_decompression_routine(technique)
+            steps = "\n".join(routine["steps"])
+            return (
+                f"Antes de qualquer análise — vamos regular o sistema nervoso primeiro.\n\n"
+                f"### {routine['name']}\n"
+                f"**Tempo sugerido:** {routine['duration']}\n\n"
+                f"{steps}\n\n"
+                f"Quando terminar, me conta o que está acontecendo. Com o sistema mais calmo, "
+                f"a conversa vai ser mais produtiva."
+            )
 
-        if any(w in msg_lower for w in ["analisar mensagem", "avaliar mensagem", "analisa essa mensagem", "o que acha dessa mensagem"]):
-            analysis = analyze_message_and_rewrite(user_message, "romantic")
-            rewrites_str = "\n".join(f"- **{r['style']}:** *\"{r['text']}\"*\n  *Por que funciona:* {r['rationale']}" for r in analysis["rewrites"])
-            return f"⚓ **Análise do Message Lab | Ancora AI**\n\n- **Pontuação de Confiança:** {analysis['confidence_score']}/100\n- **Nível de Carência/Pressão:** {analysis['neediness_level']}\n- **Nível de Banter/Humor:** {analysis['banter_level']}\n\n### 💡 Sugestões de Reescrita de Alto Valor:\n{rewrites_str}"
-
-        if any(w in msg_lower for w in ["garota", "mulher", "flerte", "flertar", "conversa", "tinder", "whatsapp", "conquistar", "chegar nela", "mandar mensagem", "ficante"]):
-            scenario_key = "dating_text" if any(k in msg_lower for k in ["mensagem", "whatsapp", "direct", "insta", "instagram", "texto"]) else "approach_icebreaker"
-            advice = generate_wingman_advice(scenario_key, user_message)
+        # 3c. Social Wingman — Dating & Conversation
+        if any(w in msg_lower for w in ["garota", "menina", "flerte", "flertar", "tinder", "match",
+                                         "direct", "dm", "instagram", "conquistar", "conversa com ela",
+                                         "chegar nela", "puxar assunto", "como falar com"]):
+            is_text = any(k in msg_lower for k in ["mensagem", "whatsapp", "texto", "resposta", "reply"])
+            advice = generate_wingman_advice("dating_text" if is_text else "approach_icebreaker", user_message)
             adv = advice["advice"]
-            princs = "\n".join(f"- {p}" for p in adv["principles"])
-            exs = "\n".join(f"- {e}" for e in adv["example_templates"])
-            return f"⚓ **Visão do Wingman | Ancora AI**\n\n**Princípios-chave:**\n{princs}\n\n**Exemplos Práticos & Ganchos:**\n{exs}\n\nO segredo é manter a naturalidade e não colocar ninguém num pedestal. O que acha de adaptar com as suas próprias palavras?"
+            principles = "\n".join(f"- {p}" for p in adv["principles"])
+            examples = "\n".join(f"- {e}" for e in adv["example_templates"])
+            return (
+                f"Vamos separar o que é fato do que é ansiedade aqui primeiro — porque a maioria "
+                f"das dificuldades sociais começa com a leitura, não com a situação em si.\n\n"
+                f"**Princípios do método (com mecanismo):**\n{principles}\n\n"
+                f"**Modelos de entrada práticos:**\n{examples}\n\n"
+                f"O que importa não é o script perfeito — é você fazendo sentido dentro do seu contexto. "
+                f"O que está mais trancando agora: a abordagem inicial ou saber o que continuar falando?"
+            )
 
-        if any(w in msg_lower for w in ["síndrome do impostor", "impostor", "inseguro", "insegurança", "não sou bom", "medo de falhar", "vergonha", "rejeição", "vacuo", "vácuo"]):
+        # 3d. Message Lab — Wingman Analysis
+        if any(w in msg_lower for w in ["analisar essa mensagem", "analisa essa mensagem",
+                                         "o que acha dessa mensagem", "avaliar mensagem", "review essa msg"]):
+            result = analyze_message_and_rewrite(user_message, "romantic")
+            rewrites = "\n".join(
+                f"**{r['style']}**\n> {r['text']}\n*{r['rationale']}*"
+                for r in result["rewrites"]
+            )
+            return (
+                f"Diagnóstico da mensagem:\n\n"
+                f"- **Confiança:** {result['confidence_score']}/100\n"
+                f"- **Pressão/Carência:** {result['neediness_level']}\n"
+                f"- **Banter/Engajamento:** {result['banter_level']}\n\n"
+                f"---\n\n**3 versões com base no que funciona melhor:**\n\n{rewrites}\n\n"
+                f"Adapta com as suas palavras — a autenticidade é o que vai fazer diferença, não o template."
+            )
+
+        # 3e. Confidence & Cognitive Reframing
+        if any(w in msg_lower for w in ["impostor", "inseguro", "insegurança", "me sinto burro",
+                                         "não sirvo", "não sou bom", "fracasso", "falhar",
+                                         "vergonha", "me julgam", "todo mundo percebeu"]):
             ref = reframe_negative_thought(user_message, "Autossabotagem / Insegurança")
-            pills = "\n".join(ref["pillars"])
-            return f"⚓ **Ancoragem de Autoconfiança:**\n\nEssa voz de autossabotagem é comum, mas ela não representa a realidade dos fatos.\n\n{pills}\n\nQual é o primeiro pequeno passo que você pode dar hoje sem buscar a perfeição imediata?"
+            pillars = "\n".join(ref["pillars"])
+            return (
+                f"O que você descreveu tem nome — é um padrão cognitivo bem documentado, não uma avaliação "
+                f"realista da sua capacidade.\n\n{pillars}\n\n"
+                f"A pergunta mais útil agora não é 'como me sentir melhor' — é "
+                f"'qual é o próximo comportamento concreto que posso executar, independente do ânimo?'"
+            )
 
-        # 3. AWS Bedrock Runtime invocation if available
+        # ─── 4. AWS BEDROCK — Full Psychological Reasoning ──────────────────
         if self.bedrock_client:
             try:
                 body = json.dumps({
                     "anthropic_version": "bedrock-2023-05-31",
-                    "max_tokens": 1000,
-                    "system": self.system_prompt,
-                    "messages": [
-                        {"role": "user", "content": user_message}
-                    ]
+                    "max_tokens": 1200,
+                    "system": self.full_system_prompt,
+                    "messages": [{"role": "user", "content": user_message}]
                 })
-                response = self.bedrock_client.invoke_model(
-                    modelId=self.model_id,
-                    body=body
-                )
+                response = self.bedrock_client.invoke_model(modelId=self.model_id, body=body)
                 response_body = json.loads(response.get("body").read())
                 return response_body["content"][0]["text"]
             except Exception as e:
-                print(f"Bedrock invocation fallback: {e}")
+                print(f"Bedrock fallback triggered: {e}")
 
-        # 4. Empathetic Conversational Response Fallback
+        # ─── 5. PRINCIPLED LOCAL FALLBACK ────────────────────────────────────
+        # Keeps methodology even without LLM — honest, specific, non-generic
         return (
-            "Te ouço com total atenção. Momentos assim exigem que a gente pare, respire e olhe a situação com clareza.\n\n"
-            "Em relação ao que você compartilhou: o primeiro passo é não se cobrar tanto. "
-            "Podemos traçar um plano de ação prático, usar o Message Lab para afinar uma resposta ou fazer um exercício de foco se preferir.\n\n"
-            "Como posso te ajudar a clarear a mente agora?"
+            "Escuta — antes de qualquer análise, deixa eu entender melhor o que você trouxe.\n\n"
+            "O que mais está pesando nisso que você descreveu: a situação em si, "
+            "ou o que você está concluindo a partir dela? "
+            "Essa separação costuma mudar bastante o que faz sentido fazer a seguir."
         )
