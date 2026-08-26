@@ -130,7 +130,6 @@ with st.sidebar:
         ("fire", "🔥 Lareira Aconchegante")
     ], format_func=lambda x: x[1])
 
-    # Audio embeds for instant relaxation
     audio_urls = {
         "rain": "https://assets.mixkit.co/active_storage/sfx/1253/1253-preview.mp3",
         "waves": "https://assets.mixkit.co/active_storage/sfx/1189/1189-preview.mp3",
@@ -247,7 +246,6 @@ with tab_roleplay:
 
     st.info(f"**Interlocutor:** {scenario_meta['partner_name']} ({scenario_meta['partner_role']})")
 
-    # Render Roleplay Chat
     for m in st.session_state.roleplay_history:
         if m["role"] == "partner":
             with st.chat_message("assistant", avatar="👤"):
@@ -309,15 +307,44 @@ with tab_decompress:
         </div>
         """, unsafe_allow_html=True)
 
-# 5. TAB: Dashboard & Métricas
+# 5. TAB: Dashboard & Métricas + Token Optimizer
 with tab_analytics:
-    st.header("📈 Dashboard de Evolução & Métricas Emocionais")
+    st.header("📈 Dashboard de Evolução, Métricas & Otimização de Tokens")
     stats = get_mood_stats()
+    token_metrics = st.session_state.agent.get_token_metrics()
 
-    mcol1, mcol2, mcol3 = st.columns(3)
+    mcol1, mcol2, mcol3, mcol4 = st.columns(4)
     mcol1.metric("Média de Humor", f"{stats['avg_score']}/10", delta="Estável")
     mcol2.metric("Total de Registros", f"{stats['total_logs']}")
-    mcol3.metric("Status da Âncora", "Ativa 24/7", delta_color="normal")
+    mcol3.metric("Tokens Economizados", f"{token_metrics['tokens_saved']:,}", delta="Zero-Token Routing")
+    mcol4.metric("Economia Estimada ($)", f"${token_metrics['estimated_cost_saved_usd']:.4f}")
+
+    st.divider()
+
+    st.subheader("⚡ Arquitetura de Economia de Tokens & Nuvem AWS")
+    tcol1, tcol2 = st.columns(2)
+    with tcol1:
+        st.markdown("""
+        <div class="glass-card">
+            <h4>🛡️ Roteamento Inteligente Zero-Tokens</h4>
+            <p style="color:#94a3b8; font-size:0.9rem;">
+                Guardrails de segurança, exercícios somáticos e diagnósticos determinísticos rodam <strong>100% localmente</strong> sem chamar a API de LLM. Isso poupa créditos AWS e reduz latência a quase zero.
+            </p>
+            <span class="metric-badge badge-success">Prompt Caching: Ativo (-90% custo input)</span>
+            <span class="metric-badge badge-info">Janela Deslizante: 6 turnos (Sem overhead O(N²))</span>
+        </div>
+        """, unsafe_allow_html=True)
+    with tcol2:
+        st.markdown("""
+        <div class="glass-card">
+            <h4>📊 Resumo de Consumo de Tokens</h4>
+            <p style="color:#94a3b8; font-size:0.9rem;">
+                Acompanhamento em tempo real da sessão ativa do usuário:
+            </p>
+            <p><strong>Tokens LLM Consumidos:</strong> <code>{}</code> tokens</p>
+            <p><strong>Tokens Poupados por Roteamento Local:</strong> <code>{}</code> tokens</p>
+        </div>
+        """.format(token_metrics['tokens_used'], token_metrics['tokens_saved']), unsafe_allow_html=True)
 
     st.divider()
 

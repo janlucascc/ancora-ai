@@ -6,12 +6,48 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.agent.core import AncoraAgent
 from src.agent.guardrails import check_crisis_risk, check_manipulation_attempt
+from src.agent.token_optimizer import TokenOptimizer
 from src.tools.social_wingman import generate_wingman_advice
 from src.tools.message_analyzer import analyze_message_and_rewrite
 from src.tools.roleplay_arena import get_scenario_details, generate_roleplay_turn
 from src.tools.stress_decompress import get_decompression_routine
 from src.tools.mood_journal import record_mood_entry, get_mood_history
 from src.database.db import get_mood_stats
+
+
+class TestTokenOptimizer(unittest.TestCase):
+
+    def setUp(self):
+        self.optimizer = TokenOptimizer(max_history_turns=4, max_output_tokens=800)
+
+    def test_estimate_tokens(self):
+        tokens = self.optimizer.estimate_tokens("Olá mundo! Esta é uma frase de teste.")
+        self.assertGreater(tokens, 0)
+
+    def test_sliding_window_history(self):
+        # Create 12 turns (24 messages)
+        long_history = [{"role": "user" if i % 2 == 0 else "assistant", "content": f"msg {i}"} for i in range(24)]
+        optimized = self.optimizer.optimize_history(long_history)
+        # Should keep only 4 * 2 = 8 messages
+        self.assertEqual(len(optimized), 8)
+        self.assertEqual(optimized[-1]["content"], "msg 23")
+
+    def test_bedrock_payload_prompt_caching(self):
+        payload, est_tokens = self.optimizer.prepare_bedrock_payload(
+            system_prompt="Test system prompt",
+            history=[{"role": "user", "content": "hello"}],
+            current_message="how are you?",
+            enable_prompt_caching=True
+        )
+        self.assertIn("system", payload)
+        self.assertIsInstance(payload["system"], list)
+        self.assertEqual(payload["system"][0]["cache_control"]["type"], "ephemeral")
+        self.assertGreater(est_tokens, 0)
+
+    def test_record_savings(self):
+        self.optimizer.record_local_routing_saving("Preciso de ajuda para respirar")
+        stats = self.optimizer.get_stats()
+        self.assertGreater(stats["tokens_saved"], 0)
 
 
 class TestGuardrails(unittest.TestCase):
@@ -103,6 +139,7 @@ class TestAgentPipeline(unittest.TestCase):
         agent = AncoraAgent()
         resp = agent.respond("Quero me matar")
         self.assertIn("188", resp)
+        self.assertGreater(agent.get_token_metrics()["tokens_saved"], 0)
 
     def test_agent_responds_to_jailbreak(self):
         agent = AncoraAgent()
