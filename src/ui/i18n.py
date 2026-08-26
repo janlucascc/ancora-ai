@@ -43,9 +43,12 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "mode_decompress": "Descompressão Somática",
         "mode_dashboard": "Dashboard & Métricas",
         "recent_convs": "CONVERSAS RECENTES",
-        "settings_heading": "⚙️ Configurações & Idioma",
+        "settings_heading": "⚙️ Configurações, Tema & LGPD",
+        "theme_label": "Tema Visual:",
+        "theme_dark": "🌙 Tema Escuro (Dark Antigravity)",
+        "theme_light": "☀️ Tema Claro (Light Clean)",
         "model_label": "Modelo de IA:",
-        "lang_label": "Idioma da Interface (8 Idiomas):",
+        "lang_label": "Idioma da Interface:",
         "input_placeholder": "Digite sua dúvida, desabafo ou situação...",
         "analyzing_spinner": "Processando análise comportamental...",
         "thought_title": "💡 Raciocínio & Metodologia TCC / ACT",
@@ -53,7 +56,12 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "offline_badge": "Modo Offline (TCC/ACT)",
         "diagnose_btn": "Diagnosticar Mensagem",
         "restart_sim_btn": "Reiniciar Simulação",
-        "save_journal_btn": "Salvar no Diário"
+        "save_journal_btn": "Salvar no Diário",
+        "lgpd_heading": "🔒 Privacidade & Conformidade LGPD",
+        "lgpd_badge": "🛡️ 100% Local · Sem Coleta de Dados Pessoais",
+        "lgpd_export_btn": "📥 Exportar Meus Dados (JSON)",
+        "lgpd_delete_btn": "🗑️ Apagar Todo o Meu Histórico (Direito ao Esquecimento)",
+        "lgpd_deleted_success": "Todos os seus dados foram permanentemente apagados."
     },
     "en": {
         "app_title": "Ancora AI | Life Anchor & Social Wingman",
@@ -67,9 +75,12 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "mode_decompress": "Somatic Decompression",
         "mode_dashboard": "Dashboard & Analytics",
         "recent_convs": "RECENT CONVERSATIONS",
-        "settings_heading": "⚙️ Settings & Language",
+        "settings_heading": "⚙️ Settings, Theme & Privacy",
+        "theme_label": "Visual Theme:",
+        "theme_dark": "🌙 Dark Theme (Antigravity)",
+        "theme_light": "☀️ Light Theme (Clean)",
         "model_label": "AI Model:",
-        "lang_label": "Interface Language (8 Languages):",
+        "lang_label": "Interface Language:",
         "input_placeholder": "Type your thoughts, venting, or situation...",
         "analyzing_spinner": "Processing behavioral analysis...",
         "thought_title": "💡 Reasoning & CBT / ACT Methodology",
@@ -77,7 +88,12 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "offline_badge": "Offline Mode (CBT/ACT)",
         "diagnose_btn": "Diagnose Message",
         "restart_sim_btn": "Restart Simulation",
-        "save_journal_btn": "Save to Journal"
+        "save_journal_btn": "Save to Journal",
+        "lgpd_heading": "🔒 Privacy & GDPR / LGPD Compliance",
+        "lgpd_badge": "🛡️ 100% Local · Zero PII Collection",
+        "lgpd_export_btn": "📥 Export My Data (JSON)",
+        "lgpd_delete_btn": "🗑️ Delete All My Data (Right to Erasure)",
+        "lgpd_deleted_success": "All your data has been permanently deleted."
     },
     "es": {
         "app_title": "Ancora AI | Copiloto de Vida y Dinámica Social",
@@ -87,11 +103,14 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "tools_heading": "HERRAMIENTAS Y MODOS",
         "mode_chat": "Chat Libre",
         "mode_msg_lab": "Laboratorio de Mensajes",
-        "mode_roleplay": "Arena de Simulación (Roleplay)",
+        "mode_roleplay": "Arena de Simulación",
         "mode_decompress": "Descompresión Somática",
         "mode_dashboard": "Panel y Métricas",
         "recent_convs": "CONVERSACIONES RECIENTES",
-        "settings_heading": "⚙️ Configuración e Idioma",
+        "settings_heading": "⚙️ Configuración, Tema y Privacidad",
+        "theme_label": "Tema Visual:",
+        "theme_dark": "🌙 Tema Oscuro",
+        "theme_light": "☀️ Tema Claro",
         "model_label": "Modelo de IA:",
         "lang_label": "Idioma de la Interfaz:",
         "input_placeholder": "Escribe lo que tienes en mente...",
@@ -101,7 +120,12 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "offline_badge": "Modo Offline (TCC/ACT)",
         "diagnose_btn": "Diagnosticar Mensaje",
         "restart_sim_btn": "Reiniciar Simulación",
-        "save_journal_btn": "Guardar en Diario"
+        "save_journal_btn": "Guardar en Diario",
+        "lgpd_heading": "🔒 Privacidad y Protección de Datos",
+        "lgpd_badge": "🛡️ 100% Local · Sin Rastreo de Datos",
+        "lgpd_export_btn": "📥 Exportar Mis Datos (JSON)",
+        "lgpd_delete_btn": "🗑️ Borrar Todos Mis Datos",
+        "lgpd_deleted_success": "Todos sus datos han sido eliminados permanentemente."
     },
     "fr": {
         "app_title": "Ancora AI | Copilote de Vie & Dynamique Sociale",
@@ -115,7 +139,10 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "mode_decompress": "Décompression Somatique",
         "mode_dashboard": "Tableau de Bord & Métriques",
         "recent_convs": "CONVERSATIONS RÉCENTES",
-        "settings_heading": "⚙️ Paramètres & Langue",
+        "settings_heading": "⚙️ Paramètres, Thème & Confidentialité",
+        "theme_label": "Thème Visuel :",
+        "theme_dark": "🌙 Thème Sombre",
+        "theme_light": "☀️ Thème Clair",
         "model_label": "Modèle d'IA :",
         "lang_label": "Langue de l'interface :",
         "input_placeholder": "Écrivez votre pensée ou situation...",
@@ -125,7 +152,12 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "offline_badge": "Mode Hors Ligne",
         "diagnose_btn": "Diagnostiquer le Message",
         "restart_sim_btn": "Redémarrer la Simulation",
-        "save_journal_btn": "Enregistrer"
+        "save_journal_btn": "Enregistrer",
+        "lgpd_heading": "🔒 Confidentialité & RGPD",
+        "lgpd_badge": "🛡️ 100% Local · Sans collecte de données",
+        "lgpd_export_btn": "📥 Exporter Mes Données (JSON)",
+        "lgpd_delete_btn": "🗑️ Supprimer Toutes Mes Données",
+        "lgpd_deleted_success": "Toutes vos données ont été supprimées définitivement."
     },
     "zh": {
         "app_title": "Ancora AI | 情绪锚点与社交助手",
@@ -139,7 +171,10 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "mode_decompress": "身心减压调节",
         "mode_dashboard": "仪表板与数据",
         "recent_convs": "最近对话",
-        "settings_heading": "⚙️ 设置与语言",
+        "settings_heading": "⚙️ 设置、主题与隐私",
+        "theme_label": "视觉主题:",
+        "theme_dark": "🌙 暗色主题",
+        "theme_light": "☀️ 亮色主题",
         "model_label": "AI 模型:",
         "lang_label": "界面语言:",
         "input_placeholder": "输入您的想法或困扰...",
@@ -149,7 +184,12 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "offline_badge": "离线模式 (CBT/ACT)",
         "diagnose_btn": "分析诊断信息",
         "restart_sim_btn": "重新开始模拟",
-        "save_journal_btn": "保存记录"
+        "save_journal_btn": "保存记录",
+        "lgpd_heading": "🔒 隐私与数据保护",
+        "lgpd_badge": "🛡️ 100% 本地存储 · 无隐私收集",
+        "lgpd_export_btn": "📥 导出我的数据 (JSON)",
+        "lgpd_delete_btn": "🗑️ 删除全部数据 (遗忘权)",
+        "lgpd_deleted_success": "您的所有数据已永久删除。"
     },
     "hi": {
         "app_title": "Ancora AI | जीवन सहारा और सामाजिक साथी",
@@ -163,7 +203,10 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "mode_decompress": "तनाव मुक्ति अभ्यास",
         "mode_dashboard": "डैशबोर्ड और मेट्रिक्स",
         "recent_convs": "हाल की बातचीत",
-        "settings_heading": "⚙️ सेटिंग्स और भाषा",
+        "settings_heading": "⚙️ सेटिंग्स, थीम और गोपनीयता",
+        "theme_label": "थीम:",
+        "theme_dark": "🌙 डार्क थीम",
+        "theme_light": "☀️ लाइट थीम",
         "model_label": "एआई मॉडल:",
         "lang_label": "इंटरफ़ेस भाषा:",
         "input_placeholder": "अपने विचार या स्थिति लिखें...",
@@ -173,7 +216,12 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "offline_badge": "ऑफ़लाइन मोड",
         "diagnose_btn": "मैसेज का विश्लेषण करें",
         "restart_sim_btn": "पुनः प्रारंभ करें",
-        "save_journal_btn": "डायरी में सहेजें"
+        "save_journal_btn": "डायरी में सहेजें",
+        "lgpd_heading": "🔒 गोपनीयता और डेटा सुरक्षा",
+        "lgpd_badge": "🛡️ 100% स्थानीय · कोई डेटा संग्रह नहीं",
+        "lgpd_export_btn": "📥 डेटा निर्यात करें (JSON)",
+        "lgpd_delete_btn": "🗑️ सभी डेटा हटाएं",
+        "lgpd_deleted_success": "आपका सभी डेटा स्थायी रूप से हटा दिया गया है।"
     },
     "ar": {
         "app_title": "Ancora AI | مرساة الحياة والذكاء الاجتماعي",
@@ -187,7 +235,10 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "mode_decompress": "تفريغ التوتر الجسدي",
         "mode_dashboard": "لوحة البيانات والمقاييس",
         "recent_convs": "المحادثات الأخيرة",
-        "settings_heading": "⚙️ الإعدادات واللغة",
+        "settings_heading": "⚙️ الإعدادات، السمة والخصوصية",
+        "theme_label": "السمة البصرية:",
+        "theme_dark": "🌙 النمط الداكن",
+        "theme_light": "☀️ النمط الفاتح",
         "model_label": "نموذج الذكاء الاصطناعي:",
         "lang_label": "لغة الواجهة:",
         "input_placeholder": "اكتب ما يدور في ذهنك الآن...",
@@ -197,7 +248,12 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "offline_badge": "الوضع المحلي بدون اتصال",
         "diagnose_btn": "تحليل الرسالة",
         "restart_sim_btn": "إعادة تشغيل المحاكاة",
-        "save_journal_btn": "حفظ في اليوميات"
+        "save_journal_btn": "حفظ في اليوميات",
+        "lgpd_heading": "🔒 الخصوصية وحماية البيانات",
+        "lgpd_badge": "🛡️ تخزين محلي 100% · لا توجد بيانات شخصية",
+        "lgpd_export_btn": "📥 تصدير بياناتي (JSON)",
+        "lgpd_delete_btn": "🗑️ حذف كافة بياناتي نهائيًا",
+        "lgpd_deleted_success": "تم حذف جميع بياناتك نهائياً."
     },
     "bn": {
         "app_title": "Ancora AI | জীবন সহায়ক ও সামাজিক উইংম্যান",
@@ -211,7 +267,10 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "mode_decompress": "মানসিক চাপ মুক্তি",
         "mode_dashboard": "ড্যাশবোর্ড ও পরিসংখ্যান",
         "recent_convs": "সাম্প্রতিক চ্যাট",
-        "settings_heading": "⚙️ সেটিংস ও ভাষা",
+        "settings_heading": "⚙️ সেটিংস, থিম ও গোপনীয়তা",
+        "theme_label": "থিম:",
+        "theme_dark": "🌙 ডার্ক থিম",
+        "theme_light": "☀️ লাইট থিম",
         "model_label": "এআই মডেল:",
         "lang_label": "ইন্টারফেস ভাষা:",
         "input_placeholder": "আপনার অনুভূতি বা পরিস্থিতি লিখুন...",
@@ -221,11 +280,16 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "offline_badge": "অফলাইন মোড",
         "diagnose_btn": "মেসেজ বিশ্লেষণ করুন",
         "restart_sim_btn": "পুনরায় শুরু করুন",
-        "save_journal_btn": "সংরক্ষণ করুন"
+        "save_journal_btn": "সংরক্ষণ করুন",
+        "lgpd_heading": "🔒 গোপনীয়তা ও ডেটা সুরক্ষা",
+        "lgpd_badge": "🛡️ ১০০% স্থানীয় সংরক্ষণ · কোনো ব্যক্তিগত ডেটা ট্র্যাকিং নেই",
+        "lgpd_export_btn": "📥 আমার ডেটা এক্সপোর্ট করুন (JSON)",
+        "lgpd_delete_btn": "🗑️ সমস্ত ডেটা মুছে ফেলুন",
+        "lgpd_deleted_success": "আপনার সমস্ত ডেটা স্থায়ীভাবে মুছে ফেলা হয়েছে।"
     }
 }
 
 def get_text(key: str, lang: str = "pt") -> str:
-    """Retrieves localized text with fallback to Portuguese/English."""
+    """Retrieves localized text with fallback."""
     lang_dict = TRANSLATIONS.get(lang, TRANSLATIONS["pt"])
     return lang_dict.get(key, TRANSLATIONS["pt"].get(key, key))

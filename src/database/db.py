@@ -16,6 +16,16 @@ def init_db(db_path: str = DB_PATH):
     with get_connection(db_path) as conn:
         cursor = conn.cursor()
 
+        # User Preferences & Settings (Persistent Theme, Language, Model)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+
+        # Mood & Emotional Logs
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS mood_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -27,6 +37,7 @@ def init_db(db_path: str = DB_PATH):
         )
         """)
 
+        # Wingman & Coaching Logs
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS coaching_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -37,6 +48,7 @@ def init_db(db_path: str = DB_PATH):
         )
         """)
 
+        # Decompression Sessions
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS decompression_sessions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,6 +59,7 @@ def init_db(db_path: str = DB_PATH):
         )
         """)
 
+        # Message Lab Analyses
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS message_analyses (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -59,6 +72,7 @@ def init_db(db_path: str = DB_PATH):
         )
         """)
 
+        # Roleplay Sessions
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS roleplay_sessions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -69,8 +83,105 @@ def init_db(db_path: str = DB_PATH):
         )
         """)
 
+# ══════════════════════════════════════════════════════════════
+# USER SETTINGS PERSISTENCE (Theme, Language, Model)
+# ══════════════════════════════════════════════════════════════
+
+def save_preference(key: str, value: str, db_path: str = DB_PATH):
+    """Saves or updates a user preference persistently."""
+    init_db(db_path)
+    with get_connection(db_path) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO user_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) "
+            "ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=CURRENT_TIMESTAMP",
+            (str(key), str(value))
+        )
+
+def get_preference(key: str, default: str = "", db_path: str = DB_PATH) -> str:
+    """Retrieves a persistent preference value."""
+    init_db(db_path)
+    with get_connection(db_path) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT value FROM user_settings WHERE key = ?", (str(key),))
+        row = cursor.fetchone()
+        return str(row[0]) if row else default
+
+def get_all_preferences(db_path: str = DB_PATH) -> Dict[str, str]:
+    """Retrieves all stored preferences."""
+    init_db(db_path)
+    with get_connection(db_path) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT key, value FROM user_settings")
+        return {r[0]: r[1] for r in cursor.fetchall()}
+
+# ══════════════════════════════════════════════════════════════
+# LGPD COMPLIANCE TOOLS (Data Portability & Right to Erasure)
+# ══════════════════════════════════════════════════════════════
+
+def export_user_data_lgpd(db_path: str = DB_PATH) -> Dict[str, Any]:
+    """
+    Exports all stored data in a portable JSON format (LGPD Art. 18, II).
+    Guarantees full user data ownership and transparency.
+    """
+    init_db(db_path)
+    with get_connection(db_path) as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT * FROM mood_logs")
+        moods = cursor.fetchall()
+
+        cursor.execute("SELECT * FROM coaching_logs")
+        coaching = cursor.fetchall()
+
+        cursor.execute("SELECT * FROM decompression_sessions")
+        decompression = cursor.fetchall()
+
+        cursor.execute("SELECT * FROM message_analyses")
+        analyses = cursor.fetchall()
+
+        cursor.execute("SELECT * FROM roleplay_sessions")
+        roleplays = cursor.fetchall()
+
+        cursor.execute("SELECT * FROM user_settings")
+        settings = cursor.fetchall()
+
+    return {
+        "lgpd_compliance": {
+            "law": "LGPD (Lei Geral de Proteção de Dados - Brasil / Lei 13.709/2018)",
+            "data_controller": "Usuário Local (Armazenamento 100% Descentralizado)",
+            "pii_collected": False,
+            "export_timestamp": datetime.now().isoformat()
+        },
+        "preferences": settings,
+        "mood_logs": moods,
+        "coaching_logs": coaching,
+        "decompression_sessions": decompression,
+        "message_analyses": analyses,
+        "roleplay_sessions": roleplays
+    }
+
+def delete_all_user_data_lgpd(db_path: str = DB_PATH) -> bool:
+    """
+    Wipes all stored personal data permanently (LGPD Art. 18, VI - Direito de Eliminação).
+    """
+    init_db(db_path)
+    with get_connection(db_path) as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM mood_logs")
+        cursor.execute("DELETE FROM coaching_logs")
+        cursor.execute("DELETE FROM decompression_sessions")
+        cursor.execute("DELETE FROM message_analyses")
+        cursor.execute("DELETE FROM roleplay_sessions")
+        cursor.execute("DELETE FROM user_settings")
+        conn.commit()
+    return True
+
+# ══════════════════════════════════════════════════════════════
+# DOMAIN LOGGING FUNCTIONS
+# ══════════════════════════════════════════════════════════════
+
 def log_mood(score: int, emotions: List[str], trigger: str, reflection: str, db_path: str = DB_PATH) -> int:
-    """Safely logs a mood entry with score clamped to 1-10."""
     init_db(db_path)
     clamped_score = max(1, min(10, int(score)))
     safe_emotions = emotions if isinstance(emotions, list) else []
@@ -86,7 +197,6 @@ def log_mood(score: int, emotions: List[str], trigger: str, reflection: str, db_
         return cursor.lastrowid
 
 def get_recent_moods(limit: int = 15, db_path: str = DB_PATH) -> List[Dict[str, Any]]:
-    """Retrieves recent mood logs with safe pagination."""
     init_db(db_path)
     safe_limit = max(1, min(100, int(limit)))
 
@@ -115,7 +225,6 @@ def get_recent_moods(limit: int = 15, db_path: str = DB_PATH) -> List[Dict[str, 
     return logs
 
 def get_mood_stats(db_path: str = DB_PATH) -> Dict[str, Any]:
-    """Calculates robust mood analytics and emotion frequency distribution."""
     init_db(db_path)
     with get_connection(db_path) as conn:
         cursor = conn.cursor()
@@ -148,7 +257,6 @@ def get_mood_stats(db_path: str = DB_PATH) -> Dict[str, Any]:
     }
 
 def log_coaching(category: str, query: str, advice: str, db_path: str = DB_PATH) -> int:
-    """Logs coaching interactions with parameter sanitation."""
     init_db(db_path)
     with get_connection(db_path) as conn:
         cursor = conn.cursor()
@@ -159,7 +267,6 @@ def log_coaching(category: str, query: str, advice: str, db_path: str = DB_PATH)
         return cursor.lastrowid
 
 def log_message_analysis(original_msg: str, confidence: int, neediness: str, banter: str, rewrites: List[Dict[str, str]], db_path: str = DB_PATH) -> int:
-    """Persists message analysis reports."""
     init_db(db_path)
     clamped_conf = max(0, min(100, int(confidence)))
     safe_rewrites = rewrites if isinstance(rewrites, list) else []
@@ -173,7 +280,6 @@ def log_message_analysis(original_msg: str, confidence: int, neediness: str, ban
         return cursor.lastrowid
 
 def log_roleplay_session(scenario_key: str, turns_count: int, scorecard: Dict[str, Any], db_path: str = DB_PATH) -> int:
-    """Persists completed roleplay simulation evaluations."""
     init_db(db_path)
     safe_scorecard = scorecard if isinstance(scorecard, dict) else {}
 
@@ -186,7 +292,6 @@ def log_roleplay_session(scenario_key: str, turns_count: int, scorecard: Dict[st
         return cursor.lastrowid
 
 def log_decompression(technique: str, duration: int = 120, notes: str = "", db_path: str = DB_PATH) -> int:
-    """Persists decompression sessions."""
     init_db(db_path)
     with get_connection(db_path) as conn:
         cursor = conn.cursor()

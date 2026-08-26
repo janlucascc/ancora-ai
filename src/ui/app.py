@@ -14,14 +14,30 @@ from src.tools.stress_decompress import get_decompression_routine
 from src.tools.social_wingman import generate_wingman_advice
 from src.tools.message_analyzer import analyze_message_and_rewrite
 from src.tools.roleplay_arena import ROLEPLAY_SCENARIOS, get_scenario_details, generate_roleplay_turn
-from src.database.db import get_mood_stats
+from src.database.db import (
+    get_mood_stats,
+    save_preference,
+    get_preference,
+    export_user_data_lgpd,
+    delete_all_user_data_lgpd
+)
 from src.ui.i18n import get_system_language, get_text, SUPPORTED_LANGUAGES
 
-# Language State (8 Most Spoken World Languages)
+# ══════════════════════════════════════════════════════════════
+# PERSISTENT SETTINGS INITIALIZATION (Database -> Session State)
+# ══════════════════════════════════════════════════════════════
 if "lang" not in st.session_state:
-    st.session_state.lang = get_system_language()
+    stored_lang = get_preference("language", "")
+    st.session_state.lang = stored_lang if stored_lang in SUPPORTED_LANGUAGES else get_system_language()
+
+if "theme" not in st.session_state:
+    st.session_state.theme = get_preference("theme", "dark")
+
+if "selected_model" not in st.session_state:
+    st.session_state.selected_model = get_preference("selected_model", "gemini-3.6-flash")
 
 lang = st.session_state.lang
+theme = st.session_state.theme
 
 # Page Config
 st.set_page_config(
@@ -32,13 +48,25 @@ st.set_page_config(
 )
 
 # ══════════════════════════════════════════════════════════════
-# MODERN DARK GLASSMORPHIC & SHIMMER THINKING ANIMATION CSS
+# THEME ENGINE (DARK & FLAWLESS LIGHT CSS)
 # ══════════════════════════════════════════════════════════════
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
-    :root {
+if theme == "light":
+    css_theme_vars = """
+        --bg-main: #f8fafc;
+        --bg-sidebar: #f1f5f9;
+        --bg-card: #ffffff;
+        --bg-user-bubble: #e2e8f0;
+        --border-color: #cbd5e1;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --accent-blue: #2563eb;
+        --accent-cyan: #0284c7;
+        --thought-bg: rgba(241, 245, 249, 0.9);
+        --thought-text: #475569;
+        --shimmer-bg: linear-gradient(90deg, rgba(226, 232, 240, 0.6) 0%, rgba(186, 230, 253, 0.6) 50%, rgba(226, 232, 240, 0.6) 100%);
+    """
+else:
+    css_theme_vars = """
         --bg-main: #0f1013;
         --bg-sidebar: #14151a;
         --bg-card: #191a22;
@@ -48,36 +76,46 @@ st.markdown("""
         --text-muted: #94a3b8;
         --accent-blue: #3b82f6;
         --accent-cyan: #38bdf8;
-    }
+        --thought-bg: rgba(25, 26, 34, 0.7);
+        --thought-text: #94a3b8;
+        --shimmer-bg: linear-gradient(90deg, rgba(30, 41, 59, 0.4) 0%, rgba(56, 189, 248, 0.1) 50%, rgba(30, 41, 59, 0.4) 100%);
+    """
 
-    html, body, [class*="css"], .stApp {
+st.markdown(f"""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    :root {{
+        {css_theme_vars}
+    }}
+
+    html, body, [class*="css"], .stApp {{
         background-color: var(--bg-main) !important;
         font-family: 'Plus Jakarta Sans', sans-serif !important;
         color: var(--text-main) !important;
-    }
+    }}
 
-    .block-container {
+    .block-container {{
         padding-top: 1.5rem !important;
         padding-bottom: 5rem !important;
         max-width: 940px !important;
-    }
+    }}
 
-    [data-testid="stSidebar"] {
+    [data-testid="stSidebar"] {{
         background-color: var(--bg-sidebar) !important;
         border-right: 1px solid var(--border-color) !important;
-    }
+    }}
 
-    @keyframes fadeInSlide {
-        from { opacity: 0; transform: translateY(6px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+    @keyframes fadeInSlide {{
+        from {{ opacity: 0; transform: translateY(6px); }}
+        to {{ opacity: 1; transform: translateY(0); }}
+    }}
 
-    .user-bubble, .assistant-body, .thought-container, .ide-card {
+    .user-bubble, .assistant-body, .thought-container, .ide-card {{
         animation: fadeInSlide 0.25s ease-out;
-    }
+    }}
 
-    /* Pulsing Green Status Dot */
-    .status-dot {
+    .status-dot {{
         display: inline-block;
         width: 7px;
         height: 7px;
@@ -86,145 +124,140 @@ st.markdown("""
         margin-right: 6px;
         box-shadow: 0 0 8px #22c55e;
         animation: pulseDot 2s infinite;
-    }
-    @keyframes pulseDot {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.4; transform: scale(0.85); }
-    }
+    }}
+    @keyframes pulseDot {{
+        0%, 100% {{ opacity: 1; transform: scale(1); }}
+        50% {{ opacity: 0.4; transform: scale(0.85); }}
+    }}
 
-    /* Live Thinking Shimmer Animation */
-    .live-thinking-box {
+    .live-thinking-box {{
         display: flex;
         align-items: center;
         gap: 12px;
-        background: linear-gradient(90deg, rgba(30, 41, 59, 0.4) 0%, rgba(56, 189, 248, 0.1) 50%, rgba(30, 41, 59, 0.4) 100%);
+        background: var(--shimmer-bg);
         background-size: 200% 100%;
         animation: shimmerWave 2s infinite linear;
-        border-left: 3px solid #38bdf8;
+        border-left: 3px solid var(--accent-cyan);
         border-radius: 6px;
         padding: 10px 16px;
         margin: 12px 0;
         font-family: 'JetBrains Mono', monospace;
         font-size: 0.88rem;
-        color: #38bdf8;
-    }
-    @keyframes shimmerWave {
-        0% { background-position: 200% 0; }
-        100% { background-position: -200% 0; }
-    }
+        color: var(--accent-cyan);
+    }}
+    @keyframes shimmerWave {{
+        0% {{ background-position: 200% 0; }}
+        100% {{ background-position: -200% 0; }}
+    }}
 
-    .thinking-spinner {
+    .thinking-spinner {{
         display: inline-block;
         width: 12px;
         height: 12px;
         border: 2px solid rgba(56, 189, 248, 0.3);
         border-radius: 50%;
-        border-top-color: #38bdf8;
+        border-top-color: var(--accent-cyan);
         animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
+    }}
+    @keyframes spin {{
+        to {{ transform: rotate(360deg); }}
+    }}
 
-    .ancora-topbar {
+    .ancora-topbar {{
         display: flex;
         align-items: center;
         justify-content: space-between;
         padding: 6px 0px 14px 0px;
         border-bottom: 1px solid var(--border-color);
         margin-bottom: 20px;
-    }
-    .topbar-title {
+    }}
+    .topbar-title {{
         font-size: 0.95rem;
         font-weight: 600;
-        color: #f1f5f9;
-    }
-    .topbar-badge {
+        color: var(--text-main);
+    }}
+    .topbar-badge {{
         font-size: 0.75rem;
-        background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(56, 189, 248, 0.1) 100%);
-        color: #60a5fa;
-        border: 1px solid rgba(59, 130, 246, 0.3);
+        background: rgba(59, 130, 246, 0.12);
+        color: var(--accent-blue);
+        border: 1px solid var(--border-color);
         padding: 4px 12px;
         border-radius: 12px;
         font-weight: 500;
-    }
+    }}
 
-    .user-bubble {
+    .user-bubble {{
         background-color: var(--bg-user-bubble);
-        border: 1px solid rgba(255,255,255,0.06);
+        border: 1px solid var(--border-color);
         border-radius: 12px;
         padding: 13px 18px;
-        color: #f8fafc;
+        color: var(--text-main);
         font-size: 0.95rem;
         line-height: 1.5;
         margin-bottom: 12px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }}
 
-    .assistant-body {
-        color: #e2e8f0;
+    .assistant-body {{
+        color: var(--text-main);
         font-size: 0.95rem;
         line-height: 1.65;
-    }
+    }}
 
-    .thought-container {
-        background-color: rgba(25, 26, 34, 0.7);
-        border-left: 2px solid #38bdf8;
+    .thought-container {{
+        background-color: var(--thought-bg);
+        border-left: 2px solid var(--accent-cyan);
         border-radius: 4px;
         padding: 10px 14px;
         margin-bottom: 12px;
         font-size: 0.85rem;
-        color: #94a3b8;
+        color: var(--thought-text);
         font-family: 'JetBrains Mono', monospace;
-    }
+    }}
 
-    .stButton>button {
-        background: linear-gradient(180deg, #1b1c24 0%, #16171d 100%) !important;
+    .stButton>button {{
+        background: var(--bg-card) !important;
         color: var(--text-main) !important;
         border: 1px solid var(--border-color) !important;
         border-radius: 8px !important;
         font-weight: 500 !important;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    }
-    .stButton>button:hover {
+        transition: all 0.2s ease !important;
+    }}
+    .stButton>button:hover {{
         border-color: var(--accent-blue) !important;
-        background: #232530 !important;
-        box-shadow: 0 0 12px rgba(59, 130, 246, 0.25) !important;
+        box-shadow: 0 0 10px rgba(59, 130, 246, 0.2) !important;
         transform: translateY(-1px) !important;
-    }
+    }}
 
-    .stChatInput {
+    .stChatInput {{
         border-color: var(--border-color) !important;
         background-color: var(--bg-sidebar) !important;
         border-radius: 14px !important;
-    }
-    .stChatInput:focus-within {
+    }}
+    .stChatInput:focus-within {{
         border-color: var(--accent-blue) !important;
-        box-shadow: 0 0 15px rgba(59, 130, 246, 0.25) !important;
-    }
+        box-shadow: 0 0 12px rgba(59, 130, 246, 0.2) !important;
+    }}
 
-    .ide-card {
-        background: linear-gradient(180deg, #191a22 0%, #15161c 100%);
+    .ide-card {{
+        background: var(--bg-card);
         border: 1px solid var(--border-color);
         border-radius: 10px;
         padding: 16px;
         margin-bottom: 12px;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .ide-card:hover {
-        border-color: rgba(56, 189, 248, 0.4);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35), 0 0 12px rgba(56, 189, 248, 0.12);
+        transition: all 0.2s ease;
+    }}
+    .ide-card:hover {{
+        border-color: var(--accent-cyan);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
         transform: translateY(-1px);
-    }
+    }}
 </style>
 """, unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════
-# SESSION STATE MANAGEMENT
+# SESSION STATE & PERSISTENCE
 # ══════════════════════════════════════════════════════════════
-if "selected_model" not in st.session_state:
-    st.session_state.selected_model = "gemini-3.6-flash"
-
 if "conversations" not in st.session_state:
     st.session_state.conversations = {
         "conv_1": {
@@ -251,11 +284,11 @@ if "active_mode" not in st.session_state:
 current_conv = st.session_state.conversations[st.session_state.current_conv_id]
 
 # ══════════════════════════════════════════════════════════════
-# SIDEBAR (8 Languages & Model Workspace)
+# SIDEBAR (8 Languages, Themes & LGPD Tools)
 # ══════════════════════════════════════════════════════════════
 with st.sidebar:
-    st.markdown(f"### ⚓ **{get_text('sidebar_brand', lang)}** <span style='font-size:0.75rem; color:#64748b;'>v2.0</span>", unsafe_allow_html=True)
-    st.markdown(f"<span class='status-dot'></span><small style='color:#94a3b8;'>{get_text('sidebar_status', lang)}</small>", unsafe_allow_html=True)
+    st.markdown(f"### ⚓ **{get_text('sidebar_brand', lang)}** <span style='font-size:0.75rem; color:var(--text-muted);'>v2.0</span>", unsafe_allow_html=True)
+    st.markdown(f"<span class='status-dot'></span><small style='color:var(--text-muted);'>{get_text('sidebar_status', lang)}</small>", unsafe_allow_html=True)
     st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 
     # New Conversation Button
@@ -304,9 +337,25 @@ with st.sidebar:
 
     st.divider()
 
-    # Settings Drawer (Language & AI Model)
+    # Settings Drawer (Theme, Language, Model & LGPD)
     with st.expander(get_text("settings_heading", lang)):
-        # 1. 8 Most Spoken Languages in the World Selector
+        # 1. Theme Switcher (Dark vs Light)
+        theme_choices = {
+            "dark": get_text("theme_dark", lang),
+            "light": get_text("theme_light", lang)
+        }
+        chosen_theme = st.selectbox(
+            get_text("theme_label", lang),
+            ["dark", "light"],
+            format_func=lambda t: theme_choices[t],
+            index=0 if st.session_state.theme == "dark" else 1
+        )
+        if chosen_theme != st.session_state.theme:
+            st.session_state.theme = chosen_theme
+            save_preference("theme", chosen_theme)
+            st.rerun()
+
+        # 2. 8 Most Spoken Languages in the World Selector
         lang_keys = list(SUPPORTED_LANGUAGES.keys())
         chosen_lang = st.selectbox(
             get_text("lang_label", lang),
@@ -316,10 +365,11 @@ with st.sidebar:
         )
         if chosen_lang != st.session_state.lang:
             st.session_state.lang = chosen_lang
+            save_preference("language", chosen_lang)
             st.session_state.agent = AncoraAgent(model_id=st.session_state.selected_model, lang=chosen_lang)
             st.rerun()
 
-        # 2. Model Selector
+        # 3. Model Selector
         model_choices = {
             "gemini-3.6-flash": "⚡ Gemini 3.6 Flash (Padrão Rápido)",
             "gemini-3.7-flash": "🧠 Gemini 3.7 Flash (Raciocínio)",
@@ -334,16 +384,36 @@ with st.sidebar:
         )
         if chosen_model_key != st.session_state.selected_model:
             st.session_state.selected_model = chosen_model_key
+            save_preference("selected_model", chosen_model_key)
             st.session_state.agent = AncoraAgent(model_id=chosen_model_key, lang=lang)
             st.toast(f"Modelo: {model_choices[chosen_model_key]}")
 
-        # 3. Gemini API Key input
-        custom_key = st.text_input("Gemini API Key:", type="password", placeholder="AQ.Ab8RN...")
-        if st.button("Salvar Chave", use_container_width=True):
-            if custom_key:
-                os.environ["GEMINI_API_KEY"] = custom_key
-                st.session_state.agent = AncoraAgent(api_key=custom_key, model_id=st.session_state.selected_model, lang=lang)
-                st.success("Chave salva!")
+        # 4. LGPD & Privacy Section
+        st.markdown("---")
+        st.caption(get_text("lgpd_heading", lang))
+        st.markdown(f"<small style='color:#22c55e;'>{get_text('lgpd_badge', lang)}</small>", unsafe_allow_html=True)
+        
+        # Export Data (LGPD Art. 18, II)
+        user_export_data = export_user_data_lgpd()
+        st.download_button(
+            label=get_text("lgpd_export_btn", lang),
+            data=json.dumps(user_export_data, indent=2, ensure_ascii=False),
+            file_name=f"ancora_ai_lgpd_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+            mime="application/json",
+            use_container_width=True
+        )
+
+        # Delete Data (LGPD Art. 18, VI)
+        if st.button(get_text("lgpd_delete_btn", lang), use_container_width=True):
+            delete_all_user_data_lgpd()
+            st.session_state.conversations = {
+                "conv_1": {
+                    "title": "Clareza & Alinhamento TCC" if lang == "pt" else "Clarity & CBT Alignment",
+                    "messages": [{"role": "assistant", "thought": "Dados limpos.", "content": get_text("default_welcome", lang)}]
+                }
+            }
+            st.success(get_text("lgpd_deleted_success", lang))
+            st.rerun()
 
 # ══════════════════════════════════════════════════════════════
 # MAIN CANVAS
@@ -361,7 +431,7 @@ active_model_badge = model_display_names.get(st.session_state.selected_model, "G
 st.markdown(f"""
 <div class="ancora-topbar">
     <div class="topbar-title">
-        ⚓ {current_conv['title']} &nbsp;·&nbsp; <span style="font-weight:400; font-size:0.8rem; color:#64748b;">Modo: {st.session_state.active_mode}</span>
+        ⚓ {current_conv['title']} &nbsp;·&nbsp; <span style="font-weight:400; font-size:0.8rem; color:var(--text-muted);">Modo: {st.session_state.active_mode}</span>
     </div>
     <div class="topbar-badge">
         {SUPPORTED_LANGUAGES.get(lang, {}).get('flag', '🌐')} {active_model_badge}
@@ -394,7 +464,7 @@ if st.session_state.active_mode == get_text("mode_chat", lang):
             """, unsafe_allow_html=True)
             st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
 
-    # Chat Input with Dynamic Thought Animation
+    # Chat Input with Instant Display & Shimmer Thought Steps
     if user_prompt := st.chat_input(get_text("input_placeholder", lang)):
         current_conv["messages"].append({"role": "user", "content": user_prompt})
         
@@ -409,11 +479,10 @@ if st.session_state.active_mode == get_text("mode_chat", lang):
             clean_title = user_prompt.replace("⚓", "").replace("💬", "").strip()
             current_conv["title"] = clean_title[:25]
 
-        # Live Dynamic Thinking Steps Container
+        # Live Shimmer Thought Animation
         thinking_placeholder = st.empty()
         thought_steps = get_dynamic_thinking_steps(user_prompt, lang=lang)
 
-        # Show realistic animated cognitive reasoning states
         for step_text in thought_steps:
             thinking_placeholder.markdown(f"""
             <div class="live-thinking-box">
@@ -469,10 +538,10 @@ elif st.session_state.active_mode == get_text("mode_msg_lab", lang):
             st.markdown("#### 3 Alternativas Estruturadas:")
             for rw in res["rewrites"]:
                 st.markdown(f"""
-                <div class="ide-card" style="border-left: 3px solid #3b82f6;">
-                    <span style="font-size:0.8rem; color:#60a5fa; font-weight:600;">{rw['style']}</span>
+                <div class="ide-card" style="border-left: 3px solid var(--accent-blue);">
+                    <span style="font-size:0.8rem; color:var(--accent-cyan); font-weight:600;">{rw['style']}</span>
                     <p style="margin:6px 0; font-size:0.95rem; font-weight:500;">"{rw['text']}"</p>
-                    <small style="color:#94a3b8;"><em>{rw['rationale']}</em></small>
+                    <small style="color:var(--text-muted);"><em>{rw['rationale']}</em></small>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -532,7 +601,7 @@ elif st.session_state.active_mode == get_text("mode_decompress", lang):
         st.markdown(f"""
         <div class="ide-card">
             <h4>{r_data['name']}</h4>
-            <p><small style="color:#60a5fa;">{r_data['duration']}</small></p>
+            <p><small style="color:var(--accent-cyan);">{r_data['duration']}</small></p>
             <ol style="margin-left: 18px; line-height: 1.7;">
                 {"".join(f"<li>{s}</li>" for s in r_data['steps'])}
             </ol>
