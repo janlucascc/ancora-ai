@@ -1,4 +1,4 @@
-﻿import os
+import os
 import json
 import re
 import time
@@ -197,8 +197,11 @@ Never reply in any other language unless the user explicitly commands a switch.
             except Exception as e:
                 print(f"Bedrock invocation error: {e}")
 
-        # C) Default Gemini Fallback if available
-        if active_model != "offline" and self.gemini_key:
+        # C) Default Gemini Fallback if key is available and model isn't offline
+        # NOTE: _invoke_gemini_live already cascades through all Gemini models,
+        # so section A above covers all gemini cases. This section handles the case
+        # where active_model was claude/bedrock but bedrock is unavailable.
+        if active_model not in ("offline",) and "gemini" not in active_model.lower() and self.gemini_key:
             gemini_res = self._invoke_gemini_live(clean_msg, model_name="gemini-3.7-flash", lang=lang)
             if gemini_res:
                 self._append_to_history(clean_msg, gemini_res["content"])

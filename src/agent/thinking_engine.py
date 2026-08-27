@@ -1,4 +1,4 @@
-﻿import random
+import random
 import re
 from typing import List, Dict
 
@@ -118,6 +118,6 @@ def get_dynamic_thinking_steps(user_text: str, lang: str = "pt") -> List[str]:
         sampled = random.sample(pool[1:-2], 2)
         thoughts.extend(sampled)
 
-    # 3. Final step
-    thoughts.append(pool[-1] if selected_lang == "pt" else pool[-1])
+    # 3. Final step — always from the correct language pool
+    thoughts.append(pool[-1])
     return thoughts

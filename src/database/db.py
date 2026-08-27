@@ -1,4 +1,4 @@
-﻿import sqlite3
+import sqlite3
 import os
 import json
 import uuid
@@ -119,7 +119,7 @@ def get_all_chat_sessions(db_path: str = DB_PATH) -> Dict[str, Any]:
     with get_connection(db_path) as conn:
         cursor = conn.cursor()
         
-        # Load Sessions
+        # Load Sessions (ASC so that dict preserves insertion order; sidebar reverses it for display)
         cursor.execute("SELECT session_id, title FROM chat_sessions ORDER BY updated_at ASC")
         for row in cursor.fetchall():
             s_id, title = row
@@ -176,6 +176,7 @@ def save_preference(key: str, value: str, db_path: str = DB_PATH):
             "ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=CURRENT_TIMESTAMP",
             (str(key), str(value))
         )
+        conn.commit()
 
 def get_preference(key: str, default: str = "", db_path: str = DB_PATH) -> str:
     init_db(db_path)

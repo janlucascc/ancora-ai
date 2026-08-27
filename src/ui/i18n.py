@@ -1,4 +1,4 @@
-﻿import locale
+import locale
 import os
 from typing import Dict, Any
 

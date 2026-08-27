@@ -160,12 +160,12 @@ st.markdown(f"""
     }}
 
     /* ─ SIDEBAR COLLAPSE / EXPAND BUTTONS (100% VISIBLE & ACCESSIBLE) ──── */
-    header[data-testid="stHeader"] {
+    header[data-testid="stHeader"] {{
         background: transparent !important;
         z-index: 99999 !important;
         display: flex !important;
         height: 3.5rem !important;
-    }
+    }}
 
     /* Target all possible Streamlit expand/collapse toggle selectors */
     [data-testid="stSidebarCollapsedControl"],
@@ -173,7 +173,7 @@ st.markdown(f"""
     button[data-testid="stSidebarCollapseButton"],
     [data-testid="stSidebarCollapsedControl"] button,
     [data-testid="collapsedControl"] button,
-    header[data-testid="stHeader"] button {
+    header[data-testid="stHeader"] button {{
         display: inline-flex !important;
         visibility: visible !important;
         opacity: 1 !important;
@@ -185,25 +185,25 @@ st.markdown(f"""
         transition: all 0.15s ease !important;
         box-shadow: 0 2px 6px rgba(0,0,0,0.1) !important;
         margin: 8px 12px !important;
-    }
+    }}
 
     [data-testid="stSidebarCollapsedControl"] button:hover,
     [data-testid="collapsedControl"] button:hover,
     button[data-testid="stSidebarCollapseButton"]:hover,
-    header[data-testid="stHeader"] button:hover {
+    header[data-testid="stHeader"] button:hover {{
         background-color: var(--bg-card-hover) !important;
         border-color: var(--accent) !important;
         color: var(--accent) !important;
-    }
+    }}
 
     [data-testid="stSidebarCollapsedControl"] svg,
     [data-testid="collapsedControl"] svg,
     button[data-testid="stSidebarCollapseButton"] svg,
-    header[data-testid="stHeader"] svg {
+    header[data-testid="stHeader"] svg {{
         fill: var(--text-primary) !important;
         stroke: var(--text-primary) !important;
         color: var(--text-primary) !important;
-    }
+    }}
 
     /* ─ BUTTON ENGINE ─────────────────────────────────── */
     .stButton {{
@@ -455,9 +455,9 @@ st.markdown(f"""
     }}
 
     /* ─ HIDE ONLY FOOTER & DEPLOY BUTTON ─────────────── */
-    footer, .stDeployButton, #MainMenu {
+    footer, .stDeployButton, #MainMenu {{
         display: none !important;
-    }
+    }}
 
     /* ─ COLUMN GAP CLEANUP ────────────────────────────── */
     [data-testid="stHorizontalBlock"] {{
@@ -487,7 +487,7 @@ if "conversations" not in st.session_state:
 if "agent" not in st.session_state:
     st.session_state.agent = AncoraAgent(model_id=st.session_state.selected_model, lang=lang)
 if "active_mode" not in st.session_state:
-    st.session_state.active_mode = get_text("mode_chat", lang)
+    st.session_state.active_mode = "mode_chat"
 
 current_conv = st.session_state.conversations[st.session_state.current_conv_id]
 
@@ -519,7 +519,7 @@ with st.sidebar:
             "messages": [{"role": "assistant", "thought": "", "content": welcome}]
         }
         st.session_state.current_conv_id = nid
-        st.session_state.active_mode = get_text("mode_chat", lang)
+        st.session_state.active_mode = "mode_chat"
         save_chat_session(nid, st.session_state.conversations[nid]["title"])
         save_chat_message(nid, "assistant", welcome, "")
         st.rerun()
@@ -537,10 +537,10 @@ with st.sidebar:
         ("mode_dashboard",  "📈", get_text("mode_dashboard", lang)),
     ]
     for m_key, m_icon, m_label in modes:
-        is_act = (st.session_state.active_mode == m_label)
+        is_act = (st.session_state.active_mode == m_key)
         prefix = "▸ " if is_act else "  "
         if st.button(f"{prefix}{m_icon}  {m_label}", key=f"nav_{m_key}", use_container_width=True, type="primary" if is_act else "secondary"):
-            st.session_state.active_mode = m_label
+            st.session_state.active_mode = m_key
             st.rerun()
 
     st.divider()
@@ -553,7 +553,7 @@ with st.sidebar:
         title_short = cdata["title"][:22]
         if st.button(f"{prefix}{title_short}", key=f"chat_{cid}", use_container_width=True, type="primary" if act else "secondary"):
             st.session_state.current_conv_id = cid
-            st.session_state.active_mode = get_text("mode_chat", lang)
+            st.session_state.active_mode = "mode_chat"
             st.rerun()
 
     st.divider()
@@ -667,10 +667,11 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ─── 1. CHAT LIVRE ───────────────────────────────────────────
-if st.session_state.active_mode == get_text("mode_chat", lang):
+if st.session_state.active_mode == "mode_chat":
     for msg in current_conv["messages"]:
         if msg["role"] == "user":
-            st.markdown(f'<div class="user-bubble">{msg["content"]}</div>', unsafe_allow_html=True)
+            safe_content = str(msg["content"]).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            st.markdown(f'<div class="user-bubble">{safe_content}</div>', unsafe_allow_html=True)
         else:
             st.markdown('<div class="assistant-wrap">', unsafe_allow_html=True)
             if msg.get("thought"):
@@ -682,8 +683,10 @@ if st.session_state.active_mode == get_text("mode_chat", lang):
     if user_prompt := st.chat_input(get_text("input_placeholder", lang)):
         current_conv["messages"].append({"role": "user", "content": user_prompt})
         save_chat_message(st.session_state.current_conv_id, "user", user_prompt)
-        st.markdown(f'<div class="user-bubble">{user_prompt}</div>', unsafe_allow_html=True)
+        safe_prompt = user_prompt.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        st.markdown(f'<div class="user-bubble">{safe_prompt}</div>', unsafe_allow_html=True)
 
+        # Generate title after first user message (welcome is index 0, user is index 1)
         if len(current_conv["messages"]) == 2:
             t = st.session_state.agent.generate_chat_title(user_prompt)
             current_conv["title"] = t
@@ -703,7 +706,7 @@ if st.session_state.active_mode == get_text("mode_chat", lang):
         st.rerun()
 
 # ─── 2. MESSAGE LAB ──────────────────────────────────────────
-elif st.session_state.active_mode == get_text("mode_msg_lab", lang):
+elif st.session_state.active_mode == "mode_msg_lab":
     st.markdown("### 📱 Message Lab & Flirt Rater")
     st.caption("Diagnóstico comportamental de mensagens antes do envio — nível de segurança, carência e engajamento.")
     c1, c2 = st.columns(2)
@@ -732,7 +735,7 @@ elif st.session_state.active_mode == get_text("mode_msg_lab", lang):
                 """, unsafe_allow_html=True)
 
 # ─── 3. ARENA DE SIMULAÇÃO (ROLEPLAY) ────────────────────────
-elif st.session_state.active_mode == get_text("mode_roleplay", lang):
+elif st.session_state.active_mode == "mode_roleplay":
     st.markdown("### 🎭 Arena de Simulação em Tempo Real")
     st.caption("Pratique conversas de alta pressão (negociação com chefe, primeiro encontro, limites) em um ambiente seguro.")
     scens = {k: v["title"] for k, v in ROLEPLAY_SCENARIOS.items()}
@@ -748,7 +751,8 @@ elif st.session_state.active_mode == get_text("mode_roleplay", lang):
         if m["role"] == "partner":
             st.markdown(f'<div class="app-card" style="border-left:3px solid #8b5cf6;"><strong>{meta["partner_name"]}:</strong> {m["content"]}</div>', unsafe_allow_html=True)
         elif m["role"] == "user":
-            st.markdown(f'<div class="user-bubble">{m["content"]}</div>', unsafe_allow_html=True)
+            safe_rp = str(m["content"]).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            st.markdown(f'<div class="user-bubble">{safe_rp}</div>', unsafe_allow_html=True)
         elif m["role"] == "coach":
             st.markdown(f'<div class="thought-body" style="margin-bottom:10px;">{m["content"]}</div>', unsafe_allow_html=True)
     if rp_in := st.chat_input("Sua resposta na simulação..."):
@@ -763,7 +767,7 @@ elif st.session_state.active_mode == get_text("mode_roleplay", lang):
         st.rerun()
 
 # ─── 4. DESCOMPRESSÃO SOMÁTICA ──────────────────────────────
-elif st.session_state.active_mode == get_text("mode_decompress", lang):
+elif st.session_state.active_mode == "mode_decompress":
     st.markdown("### 🫁 Descompressão & Regulação Somática")
     st.caption("Protocolos neurocientíficos de alívio rápido para quando o sistema nervoso estiver em sobrecarga.")
     c1, c2 = st.columns(2)
@@ -775,7 +779,9 @@ elif st.session_state.active_mode == get_text("mode_decompress", lang):
             ("perspective_reset", "Reset de Perspectiva")
         ]
         tech = st.selectbox("Protocolo:", techs, format_func=lambda x: x[1])
-        rd = get_decompression_routine(tech[0])
+        # Only fetch routine details for display — do NOT log on every render
+        from src.tools.stress_decompress import DECOMPRESSION_ROUTINES
+        rd = DECOMPRESSION_ROUTINES.get(tech[0], DECOMPRESSION_ROUTINES["physiological_sigh"])
         steps_html = "".join(f"<li style='margin-bottom:6px;'>{s}</li>" for s in rd["steps"])
         st.markdown(f"""
         <div class="app-card">
@@ -784,6 +790,10 @@ elif st.session_state.active_mode == get_text("mode_decompress", lang):
             <ol style="margin:8px 0 0 18px; line-height:1.7; color:var(--text-primary);">{steps_html}</ol>
         </div>
         """, unsafe_allow_html=True)
+        if st.button("▶ Iniciar & Registrar Sessão", type="primary", use_container_width=True):
+            from src.tools.stress_decompress import get_decompression_routine
+            get_decompression_routine(tech[0])  # logs to DB only when user actively starts
+            st.success("Sessão registrada! Siga as instruções acima.")
     with c2:
         st.markdown("#### Sons Ambientes")
         s_opt = st.selectbox("Som:", ["Chuva Suave", "Ondas do Oceano", "Lareira"])
@@ -795,7 +805,7 @@ elif st.session_state.active_mode == get_text("mode_decompress", lang):
         st.audio(urls[s_opt], format="audio/mp3")
 
 # ─── 5. DASHBOARD & MÉTRICAS ────────────────────────────────
-elif st.session_state.active_mode == get_text("mode_dashboard", lang):
+elif st.session_state.active_mode == "mode_dashboard":
     st.markdown("### 📈 Dashboard & Métricas")
     stats = get_mood_stats()
     tok = st.session_state.agent.get_token_metrics()
